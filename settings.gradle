@@ -1,0 +1,4 @@
+rootProject.name = 'PokeSearcher'
+include 'DataScraoer'
+include 'DataScraper'
+
