@@ -11,6 +11,7 @@ import org.jsoup.select.Evaluator;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 // TODO Refactor this to handle dex by generation
 public class Scraper {
@@ -31,29 +32,37 @@ public class Scraper {
 //          headline.attr("title"), headline.absUrl("href"));
 //    }
 
-    Set<String> pokedexUrls = getAllPokemonDexUrls();
-
-    Set<Pokemon> allPokemon = new HashSet<>();
-
-    int i = 0;
-    for (String pokedexUrl : pokedexUrls) {
-      if (i >= 10) break;
-      log(pokedexUrl);
-      Pokemon pokemon = extractPokemonInfo(pokedexUrl);
-//      log(pokemon.toString());
-
-      allPokemon.add(pokemon);
-
-      i++;
-    }
-
-    log(allPokemon.toString());
 
 
-    // Test with one
-//    String url = pokedexUrls.iterator().next();
-//    Pokemon pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/chesnaught/");
-//    log(pokemon.toString());
+
+//    Set<String> pokedexUrls = getAllPokemonDexUrls();
+//
+//    Set<Pokemon> allPokemon = new HashSet<>();
+//
+//    int i = 0;
+//    for (String pokedexUrl : pokedexUrls) {
+//      if (i >= 10) break;
+//      log(pokedexUrl);
+//      Pokemon pokemon = extractPokemonInfo(pokedexUrl);
+////      log(pokemon.toString());
+//
+//      allPokemon.add(pokemon);
+//
+//      i++;
+//    }
+//
+//    log(allPokemon.toString());
+
+
+
+
+    // Test with one prev gen mon
+    Pokemon pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/chesnaught/");
+    log(pokemon.toString());
+
+    // Test with one new gen mon
+    pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
+    log(pokemon.toString());
   }
 
   public Set<String> getAllPokemonDexUrls() throws IOException {
@@ -120,7 +129,7 @@ public class Scraper {
 
     // Name
     String englishName = dexTableNameNumberDataTds.get(0).text();
-    log(englishName);
+//    log(englishName);
     Name name = new Name();
     name.englishName = englishName;
     pokemon.name = name;
@@ -131,7 +140,7 @@ public class Scraper {
         dexTableNameNumberDataTds.get(2)
             .select("table > tbody > tr > td")
     );
-    log(dexToNumber.toString());
+//    log(dexToNumber.toString());
     Pokedex pokedex = new Pokedex();
     pokedex.dexNumbers = dexToNumber;
     pokemon.pokedex = pokedex;
@@ -141,8 +150,12 @@ public class Scraper {
     Elements typeElements = dexTableNameNumberDataTds.get(4).select(" > a");
 //    log(typeElements.toString());
     Set<PokemonType> types = extractTypes(typeElements);
-    log(types.toString());
+//    log(types.toString());
     pokemon.types = types;
+
+    Moveset moveset = extractMoveset(doc);
+//    log(moveset.toString());
+    pokemon.moveset = moveset;
 
     return pokemon;
   }
@@ -177,13 +190,43 @@ public class Scraper {
       String[] splits = href.getValue().split("/");
       String type = splits[splits.length - 1].replaceAll(".shtml", ""); // remove the .shtml part of the type
       PokemonType pokemonType = PokemonType.valueOf(type);
-      if (pokemonType == null) {
-        throw new RuntimeException("Unexpected type detected [" + type + "]");
-      }
       types.add(pokemonType);
     }
 
     return types;
+  }
+
+  private Moveset extractMoveset(Document doc) {
+    Moveset moveset = new Moveset();
+    // For now, we just want the levels and move names. The full move/attack data will be scraped
+    // from https://www.serebii.net/attackdex-sv/ later
+
+    Elements movesetsInfoTrs = doc
+        .select("table.dextable").get(8)
+        .select("tbody > tr");
+
+    // Standard level up moves
+    // 0 first row - heading (skip)
+    // 1 second row - subheadings (skip)
+    // After that data for each move split across two TRs
+    // 2 (a) - data (then by td... 0) Level, Attack Name (+ Link), Type, Category, Attack power, Accuracy, PP, Effect Percentage
+    // 3 (b) - description (one td)
+    for (int i = 2; i < movesetsInfoTrs.size(); i += 2) {
+      Element dataTr = movesetsInfoTrs.get(i);
+      Elements dataTds = dataTr.select("td");
+//      log(dataTds.toString());
+
+      String level = dataTds.get(0).text();
+      MoveAcquire acquire = MoveAcquire.of(level);
+
+      String movePartialLink = dataTds.get(1).select("a").get(0).attribute("href").getValue();
+      String[] splits = movePartialLink.split("/");
+      String movename = splits[splits.length - 1].replaceAll(".shtml", "");
+
+      moveset.levelUpMoves.add(new Pair<>(acquire, movename));
+    }
+
+    return moveset;
   }
 
   private Document getPageWithDelay(String url) {
@@ -201,21 +244,22 @@ public class Scraper {
   }
 
   private void log(String... msg) {
-    System.out.println("log -> " + String.join(System.lineSeparator(), msg));
+    System.out.println("log -> " + System.lineSeparator() + String.join(System.lineSeparator(), msg));
   }
 
   class Pokemon {
     Name name;
     Pokedex pokedex;
     Set<PokemonType> types;
+    Moveset moveset;
 
     @Override
     public String toString() {
-      return "Pokemon{" +
-          "name=" + name +
-          ", pokedex=" + pokedex +
-          ", types=" + types +
-          '}';
+      return name + System.lineSeparator() +
+          "Type ->" + System.lineSeparator() + types + System.lineSeparator() +
+          "Pokedex -> " + System.lineSeparator() + pokedex + System.lineSeparator() +
+          "Moveset -> " + System.lineSeparator() + moveset
+          ;
     }
   }
 
@@ -239,6 +283,71 @@ public class Scraper {
           "dexNumbers=" + dexNumbers +
           '}';
     }
+  }
+
+  class Moveset {
+    private List<Pair<MoveAcquire, String>> levelUpMoves = new ArrayList<>();
+//    private Map<String, String> eggMoves = new ;
+
+    @Override
+    public String toString() {
+      return levelUpMoves.stream().map(pair -> pair.toString() + System.lineSeparator()).collect(Collectors.joining());
+
+//      return "Moveset{" +
+//          "levelUpMoves=" + levelUpMoves +
+//          '}';
+    }
+  }
+
+  class Pair<L, R> {
+    L left;
+    R right;
+
+    public Pair(L left, R right) {
+      this.left = left;
+      this.right = right;
+    }
+
+    @Override
+    public String toString() {
+      return "<<" + left +
+          ", " + right +
+          ">>";
+    }
+  }
+
+  static class MoveAcquire {
+    MoveAcquireType acquireType;
+    int level;
+
+    public static MoveAcquire of(String value) {
+      MoveAcquire moveAcquire = new MoveAcquire();
+      if (value.equals("Evolve")) {
+        moveAcquire.acquireType = MoveAcquireType.Evolve;
+      } else if (value.equals("—")) {
+        moveAcquire.acquireType = MoveAcquireType.Relearner;
+      } else {
+        moveAcquire.acquireType = MoveAcquireType.Level;
+        moveAcquire.level = Integer.valueOf(value);
+      }
+
+      return moveAcquire;
+    }
+
+    @Override
+    public String toString() {
+      if (acquireType == MoveAcquireType.Level) {
+        return "" + level;
+      } else {
+        return acquireType.toString();
+      }
+    }
+  }
+
+  enum MoveAcquireType{
+    Relearner,
+    Evolve,
+    Level
   }
 
   enum PokemonType {
