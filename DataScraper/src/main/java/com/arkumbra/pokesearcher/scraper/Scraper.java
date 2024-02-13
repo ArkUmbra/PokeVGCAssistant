@@ -6,11 +6,9 @@ import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.jsoup.select.Evaluator;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 // TODO Refactor this to handle dex by generation
@@ -35,34 +33,34 @@ public class Scraper {
 
 
 
-//    Set<String> pokedexUrls = getAllPokemonDexUrls();
-//
-//    Set<Pokemon> allPokemon = new HashSet<>();
-//
-//    int i = 0;
-//    for (String pokedexUrl : pokedexUrls) {
-//      if (i >= 10) break;
-//      log(pokedexUrl);
-//      Pokemon pokemon = extractPokemonInfo(pokedexUrl);
-////      log(pokemon.toString());
-//
-//      allPokemon.add(pokemon);
-//
-//      i++;
-//    }
-//
-//    log(allPokemon.toString());
+    Set<String> pokedexUrls = getAllPokemonDexUrls();
+
+    Set<Pokemon> allPokemon = new HashSet<>();
+
+    int i = 0;
+    for (String pokedexUrl : pokedexUrls) {
+      if (i >= 4) break;
+      log(pokedexUrl);
+      Pokemon pokemon = extractPokemonInfo(pokedexUrl);
+//      log(pokemon.toString());
+
+      allPokemon.add(pokemon);
+
+      i++;
+    }
+
+    log(allPokemon.toString());
 
 
 
 
     // Test with one prev gen mon
-    Pokemon pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/chesnaught/");
-    log(pokemon.toString());
-
-    // Test with one new gen mon
-    pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
-    log(pokemon.toString());
+//    Pokemon pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/chesnaught/");
+//    log(pokemon.toString());
+//
+//     Test with one new gen mon
+//    pokemon = extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
+//    log(pokemon.toString());
   }
 
   public Set<String> getAllPokemonDexUrls() throws IOException {
@@ -201,8 +199,18 @@ public class Scraper {
     // For now, we just want the levels and move names. The full move/attack data will be scraped
     // from https://www.serebii.net/attackdex-sv/ later
 
-    Elements movesetsInfoTrs = doc
-        .select("table.dextable").get(8)
+    parseLevelOrTmMoveset(moveset.getLevelUpMoves(), doc.select("table.dextable").get(8));
+    parseLevelOrTmMoveset(moveset.getTmMoves(), doc.select("table.dextable").get(9));
+    parseEggMovesMoveset(moveset.getEggMoves(), doc.select("table.dextable").get(10));
+
+    return moveset;
+  }
+
+  private void parseLevelOrTmMoveset(List<Pair<MoveAcquire, String>> moves, Element dexTable) {
+    // For now, we just want the levels and move names. The full move/attack data will be scraped
+    // from https://www.serebii.net/attackdex-sv/ later
+
+    Elements movesetsInfoTrs = dexTable
         .select("tbody > tr");
 
     // Standard level up moves
@@ -223,10 +231,42 @@ public class Scraper {
       String[] splits = movePartialLink.split("/");
       String movename = splits[splits.length - 1].replaceAll(".shtml", "");
 
-      moveset.levelUpMoves.add(new Pair<>(acquire, movename));
+      moves.add(new Pair<>(acquire, movename));
+    }
+  }
+
+  private void parseEggMovesMoveset(List<String> eggMoves, Element dexTable) {
+    // For now, we just want the levels and move names. The full move/attack data will be scraped
+    // from https://www.serebii.net/attackdex-sv/ later
+
+    Elements movesetsInfoTrs = dexTable
+        .select("tbody > tr");
+
+    // Standard level up moves
+    // 0 first row - heading (skip)
+    // 1 second row - subheadings (skip)
+    // After that data for each move split across two TRs
+    // 2 (a) - data (then by td... 0) Attack Name (+ Link), Type, Category, Attack power, Accuracy, PP, Effect Percentage
+    // 3 (b) - description (one td)
+
+    // Not all Pokemon have egg moves. In the case of no egg moves, Serebii doesn't display the egg moves table
+    // Therefore, we want to check we have the right table or not
+    if (! movesetsInfoTrs.get(0).text().contains("Egg Moves")) {
+      return;
     }
 
-    return moveset;
+    for (int i = 2; i < movesetsInfoTrs.size(); i += 2) {
+      Element dataTr = movesetsInfoTrs.get(i);
+      Elements dataTds = dataTr.select("td");
+//      log(dataTds.toString());
+
+
+      String movePartialLink = dataTds.get(0).select("a").get(0).attribute("href").getValue();
+      String[] splits = movePartialLink.split("/");
+      String movename = splits[splits.length - 1].replaceAll(".shtml", "");
+
+      eggMoves.add(movename);
+    }
   }
 
   private Document getPageWithDelay(String url) {
@@ -247,127 +287,4 @@ public class Scraper {
     System.out.println("log -> " + System.lineSeparator() + String.join(System.lineSeparator(), msg));
   }
 
-  class Pokemon {
-    Name name;
-    Pokedex pokedex;
-    Set<PokemonType> types;
-    Moveset moveset;
-
-    @Override
-    public String toString() {
-      return name + System.lineSeparator() +
-          "Type ->" + System.lineSeparator() + types + System.lineSeparator() +
-          "Pokedex -> " + System.lineSeparator() + pokedex + System.lineSeparator() +
-          "Moveset -> " + System.lineSeparator() + moveset
-          ;
-    }
-  }
-
-  class Name {
-    String englishName;
-
-    @Override
-    public String toString() {
-      return "Name{" +
-          "englishName='" + englishName + '\'' +
-          '}';
-    }
-  }
-
-  class Pokedex {
-    Map<String, Integer> dexNumbers = new HashMap<>();
-
-    @Override
-    public String toString() {
-      return "Pokedex{" +
-          "dexNumbers=" + dexNumbers +
-          '}';
-    }
-  }
-
-  class Moveset {
-    private List<Pair<MoveAcquire, String>> levelUpMoves = new ArrayList<>();
-//    private Map<String, String> eggMoves = new ;
-
-    @Override
-    public String toString() {
-      return levelUpMoves.stream().map(pair -> pair.toString() + System.lineSeparator()).collect(Collectors.joining());
-
-//      return "Moveset{" +
-//          "levelUpMoves=" + levelUpMoves +
-//          '}';
-    }
-  }
-
-  class Pair<L, R> {
-    L left;
-    R right;
-
-    public Pair(L left, R right) {
-      this.left = left;
-      this.right = right;
-    }
-
-    @Override
-    public String toString() {
-      return "<<" + left +
-          ", " + right +
-          ">>";
-    }
-  }
-
-  static class MoveAcquire {
-    MoveAcquireType acquireType;
-    int level;
-
-    public static MoveAcquire of(String value) {
-      MoveAcquire moveAcquire = new MoveAcquire();
-      if (value.equals("Evolve")) {
-        moveAcquire.acquireType = MoveAcquireType.Evolve;
-      } else if (value.equals("—")) {
-        moveAcquire.acquireType = MoveAcquireType.Relearner;
-      } else {
-        moveAcquire.acquireType = MoveAcquireType.Level;
-        moveAcquire.level = Integer.valueOf(value);
-      }
-
-      return moveAcquire;
-    }
-
-    @Override
-    public String toString() {
-      if (acquireType == MoveAcquireType.Level) {
-        return "" + level;
-      } else {
-        return acquireType.toString();
-      }
-    }
-  }
-
-  enum MoveAcquireType{
-    Relearner,
-    Evolve,
-    Level
-  }
-
-  enum PokemonType {
-    grass,
-    water,
-    fire,
-    electric,
-    normal,
-    fighting,
-    ice,
-    psychic,
-    ground,
-    rock,
-    steel,
-    dragon,
-    dark,
-    fairy,
-    poison,
-    ghost,
-    flying,
-    bug
-  }
 }
