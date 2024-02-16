@@ -54,6 +54,14 @@ public class ScraperGen9Test {
     // No Egg moves
     Pokemon hooh = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/ho-oh/");
     System.out.println(hooh);
+    assertNames(new Name("Ho-oh"), hooh.name);
+    assertPokedex(
+        mapOfNullable(
+            "Paldea", null,
+            "National", 250,
+            "Blueberry", null,
+            "Kitakami", null
+        ), hooh.pokedex);
   }
 
   private Map<String, Integer> mapOfNullable(Object... keyAndValues) {

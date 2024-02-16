@@ -2,6 +2,7 @@ package com.arkumbra.pokesearcher.scraper;
 
 public class Name {
   String englishName;
+  String japanese;
 
   public Name() { }
 
@@ -12,7 +13,8 @@ public class Name {
   @Override
   public String toString() {
     return "Name{" +
-        "englishName='" + englishName + '\'' +
+        "englishName='" + englishName + '\'' + System.lineSeparator() +
+        "japaneseName='" + japanese + '\'' +
         '}';
   }
 }

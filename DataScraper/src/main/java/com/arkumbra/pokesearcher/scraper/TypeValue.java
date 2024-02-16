@@ -1,6 +1,6 @@
 package com.arkumbra.pokesearcher.scraper;
 
-public enum PokemonType {
+public enum TypeValue {
   grass,
   water,
   fire,

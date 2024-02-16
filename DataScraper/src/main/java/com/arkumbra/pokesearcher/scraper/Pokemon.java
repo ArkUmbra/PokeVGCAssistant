@@ -3,9 +3,10 @@ package com.arkumbra.pokesearcher.scraper;
 import java.util.Set;
 
 public class Pokemon {
+  String idName;
   Name name;
   Pokedex pokedex;
-  Set<PokemonType> types;
+  Set<TypeValue> types;
   Moveset moveset;
 
   @Override
