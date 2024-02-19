@@ -5,17 +5,19 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ScraperGen9Test {
+public class PokedexScraperGen9Test {
 
-  private Scraper scraper;
+  private PokedexScraper scraper;
 
   @BeforeEach
   public void setUp() {
-    this.scraper = new Scraper();
+    this.scraper = new PokedexScraper();
   }
 
   @Test
@@ -24,44 +26,67 @@ public class ScraperGen9Test {
   }
 
   @Test
-  public void testVDifferentlyFormattedPokemonPages() throws IOException {
+  public void testDifferentlyFormattedPokemonPages() throws IOException {
     // New SV Poke
     Pokemon tinkaton = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
     System.out.println(tinkaton);
 
-    assertNames(new Name("Tinkaton"), tinkaton.name);
+    assertFalse(tinkaton.hasAlternateForms());
+    assertNames(new Name("Tinkaton"), tinkaton.getDetails().getName());
     assertPokedex(
         mapOfNullable(
             "Paldea", 281,
             "National", 959,
             "Blueberry", null,
             "Kitakami", null
-        ), tinkaton.pokedex);
+        ), tinkaton.getDetails().getPokedex());
 
     // Pokemon from previous generation that is available in SV
     Pokemon rillaboom = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
     System.out.println(rillaboom);
-    assertNames(new Name("Rillaboom"), rillaboom.name);
+
+    assertFalse(rillaboom.hasAlternateForms());
+    assertNames(new Name("Rillaboom"), rillaboom.getDetails().getName());
     assertPokedex(
         mapOfNullable(
             "Paldea", null,
             "National", 812,
             "Blueberry", 229,
             "Kitakami", null
-        ), rillaboom.pokedex);
+        ), rillaboom.getDetails().getPokedex());
 
 
     // No Egg moves
     Pokemon hooh = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/ho-oh/");
     System.out.println(hooh);
-    assertNames(new Name("Ho-oh"), hooh.name);
+    assertNames(new Name("Ho-Oh"), hooh.getDetails().getName());
     assertPokedex(
         mapOfNullable(
             "Paldea", null,
             "National", 250,
             "Blueberry", null,
             "Kitakami", null
-        ), hooh.pokedex);
+        ), hooh.getDetails().getPokedex());
+    assertFalse(hooh.hasAlternateForms());
+  }
+
+  @Test
+  public void testMultiFormPokemonScrapeCorrectly() throws IOException {
+    Pokemon weezing = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/weezing/");
+    System.out.println(weezing);
+
+    assertTrue(weezing.hasAlternateForms());
+    assertEquals(1, weezing.getAlternateForms().size());
+
+    PokemonDetails kantoWeezing = weezing.getDetails();
+    assertNames(new Name("Weezing"), kantoWeezing.getName());
+    assertEquals("Kantonian", kantoWeezing.getFormRegion());
+    assertEquals(Set.of(TypeValue.poison), kantoWeezing.getTypes());
+
+    PokemonDetails galarWeezing = weezing.getAlternateForms().get(0);
+    assertNames(new Name("Weezing"), galarWeezing.getName());
+    assertEquals("Galarian", galarWeezing.getFormRegion());
+    assertEquals(List.of(TypeValue.poison, TypeValue.fairy), galarWeezing.getTypes());
   }
 
   private Map<String, Integer> mapOfNullable(Object... keyAndValues) {
@@ -88,9 +113,4 @@ public class ScraperGen9Test {
     assertEquals(expectedDex.get("Kitakami"), pokedex.dexNumbers.get("Kitakami"), "Kitakami dex mismatch");
   }
 
-//  private void assertEqualOrNull(Integer expected, Integer actual) {
-//    if (expected == null) {
-//      assertNull(Actual)
-//    }
-//  }
 }

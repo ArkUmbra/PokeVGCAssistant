@@ -1,7 +1,6 @@
 package com.arkumbra.pokesearcher.scraper;
 
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -10,9 +9,10 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.*;
 
+import static com.arkumbra.pokesearcher.scraper.Util.getPageWithDelay;
+
 // TODO Refactor this to handle dex by generation
-public class Scraper {
-  private static final String pokedexUrlBase = "https://www.serebii.net";
+public class PokedexScraper {
   private static final String NOT_PRESENT_IN_DEX = "-";
 
   public Set<Pokemon> execute() throws IOException {
@@ -35,36 +35,11 @@ public class Scraper {
   }
 
   public Set<String> getAllPokemonDexUrls() throws IOException {
-    // There is some duplication in pokemon, due to them being in each region's pokedex and also in the alphabetically
-    // selected boxes
-    // You could probably refine the doc select cssQuery to only grab one one of them, but this is a simpler and
-    // easier to maintain solution (at least I think so)
-    Set<String> urls = new HashSet<>();
-
-    // SelectURL
-    Document doc = getPageWithDelay("https://www.serebii.net/pokedex-sv/");
-    log(doc.title());
-
-    Elements pokedexSelectBoxes = doc.select("select[name=SelectURL] > option");
-
-    for (Element element : pokedexSelectBoxes) {
-      String shortUrl = element.attr("value");
-      if (shortUrl != null && !shortUrl.equals("#")) {
-        String combinedUrl = pokedexUrlBase + shortUrl;
-        urls.add(combinedUrl);
-      }
-    }
-
-    return urls;
+    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiPokedexScarletViolet);
   }
 
   public Pokemon extractPokemonInfo(String url) throws IOException {
     Document doc = getPageWithDelay(url);
-
-    // second occurrence of dextable class. TR inside the tbody that contains the actual data
-    Element dexTableNameNumberRowInnerDataTr = doc
-        .select("table.dextable").get(1)
-        .select("tbody:nth-child(1) > tr:nth-child(2)").first();
 
     // TDs
     // 0 - Name
@@ -72,15 +47,16 @@ public class Scraper {
     // 2 - No.
     // 3 - Gender Ratio
     // 4 - Type
-    Elements dexTableNameNumberDataTds = dexTableNameNumberRowInnerDataTr.select("> td");
+    Elements dexTableNameNumberDataTds = Util.selectDataRowTdsByPartOfTrHeading(doc, "Other names");
 
     Pokemon pokemon = new Pokemon();
+    PokemonDetails details = new PokemonDetails();
 
     // Name
     String englishName = dexTableNameNumberDataTds.get(0).text();
     Name name = new Name();
     name.englishName = englishName;
-    pokemon.name = name;
+    details.setName(name);
 
     // Pokedex number
     Map<String, Integer> dexToNumber = extractDexInfo(
@@ -90,15 +66,16 @@ public class Scraper {
 
     Pokedex pokedex = new Pokedex();
     pokedex.dexNumbers = dexToNumber;
-    pokemon.pokedex = pokedex;
+    details.setPokedex(pokedex);
 
     // Types
     Elements typeElements = dexTableNameNumberDataTds.get(4).select(" > a");
-    Set<TypeValue> types = extractTypes(typeElements);
-    pokemon.types = types;
+    details.setTypes(extractTypes(typeElements));
 
-    Moveset moveset = extractMoveset(doc);
-    pokemon.moveset = moveset;
+    // Moveset
+    details.setMoveset(extractMoveset(doc));
+
+    pokemon.setDetails(details);
 
     return pokemon;
   }
@@ -120,8 +97,8 @@ public class Scraper {
     return dexToNumber;
   }
 
-  private Set<TypeValue> extractTypes(Elements typeElements) {
-    Set<TypeValue> types = new HashSet<>();
+  private LinkedHashSet<TypeValue> extractTypes(Elements typeElements) {
+    LinkedHashSet<TypeValue> types = new LinkedHashSet<>();
 
     for (Element typeElement : typeElements) {
       Attribute href = typeElement.attribute("href");
@@ -211,20 +188,6 @@ public class Scraper {
       String movename = splits[splits.length - 1].replaceAll(".shtml", "");
 
       eggMoves.add(movename);
-    }
-  }
-
-  private Document getPageWithDelay(String url) {
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace(); // TODO logger
-    }
-
-    try {
-      return Jsoup.connect(url).get();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
   }
 

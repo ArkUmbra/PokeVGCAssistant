@@ -11,29 +11,14 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.arkumbra.pokesearcher.scraper.Util.selectDataRowTdsByPartOfTrHeading;
+
 // TODO Refactor this to handle dex by generation
 public class AttackDexScraper {
-  private static final String pokedexUrlBase = "https://www.serebii.net";
   private static final String NOT_PRESENT_IN_DEX = "-";
 
   public Set<String> getAllAttackDexUrls() throws IOException {
-    Set<String> urls = new HashSet<>();
-
-    // SelectURL
-    Document doc = getPageWithDelay("https://www.serebii.net/attackdex-sv/");
-    log(doc.title());
-
-    Elements pokedexSelectBoxes = doc.select("select[name=SelectURL] > option");
-
-    for (Element element : pokedexSelectBoxes) {
-      String shortUrl = element.attr("value");
-      if (shortUrl != null && !shortUrl.equals("#")) {
-        String combinedUrl = pokedexUrlBase + shortUrl;
-        urls.add(combinedUrl);
-      }
-    }
-
-    return urls;
+    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAttackDex);
   }
 
   public Move extractMoveInfo(String url) throws IOException {
@@ -44,7 +29,7 @@ public class AttackDexScraper {
     // 0 - Name
     // 1 - Battle Type
     // 2 - Category
-    Elements tdsFirstDataRow = selectDataRowTdsByFirstTrHeading(doc, "Attack Name");
+    Elements tdsFirstDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Attack Name");
 
     // Name
     String[] nameSplits = tdsFirstDataRow.get(0).html().split("<br>");
@@ -65,7 +50,7 @@ public class AttackDexScraper {
     // 0 - PP
     // 1 - Base Power
     // 2 - Accuracy
-    Elements tdsSecondDataRow = selectDataRowTdsByFirstTrHeading(doc, "Power Points");
+    Elements tdsSecondDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Power Points");
     int pp = Integer.parseInt(tdsSecondDataRow.get(0).text());
     int power = Integer.parseInt(tdsSecondDataRow.get(1).text());
     int accuracy = Integer.parseInt(tdsSecondDataRow.get(2).text());
@@ -76,13 +61,13 @@ public class AttackDexScraper {
 
     // ------- Third data row -----------
     // 0 - Battle Effect
-    Elements tdsThirdDataRow = selectDataRowTdsByFirstTrHeading(doc, "Battle Effect");
+    Elements tdsThirdDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Battle Effect");
     boolean unusableLegacyMove = tdsThirdDataRow.get(0).text().startsWith("This move can't be used.");
 
     // ------- Fourth data row -----------
     // 0 - Secondary Effect
     // 1 - Effect Rate
-    Elements tdsFourthDataRow = selectDataRowTdsByFirstTrHeading(doc, "Secondary Effect");
+    Elements tdsFourthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Secondary Effect");
     String effectRateUnparsed = tdsFourthDataRow.get(1).text().split("%")[0].trim();
 
     EffectChance chance = (effectRateUnparsed.equals("--")) ? EffectChance.NONE : new EffectChance(Integer.parseInt(effectRateUnparsed));
@@ -93,7 +78,7 @@ public class AttackDexScraper {
     // 0 - Base Critical Hit Rate
     // 1 - Speed Priority
     // 2 - Pokemon hit in battle
-    Elements tdsFifthDataRow = selectDataRowTdsByFirstTrHeading(doc, "Base Critical Hit Rate");
+    Elements tdsFifthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Base Critical Hit Rate");
     String criticalRatioUnparsed = tdsFifthDataRow.get(0).text();
     String priorityUnparsed = tdsFifthDataRow.get(1).text();
     String targetHitUnparsed = tdsFifthDataRow.get(2).text();
@@ -116,21 +101,21 @@ public class AttackDexScraper {
     Set<AttackMetaData> metaData = new HashSet<>();
     move.setAttackMetaData(metaData);
 
-    Elements tdsSixthDataRow = selectDataRowTdsByFirstTrHeading(doc, "Physical Contact");
+    Elements tdsSixthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Physical Contact");
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(0).text())) metaData.add(AttackMetaData.contact);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(1).text())) metaData.add(AttackMetaData.sound);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(2).text())) metaData.add(AttackMetaData.punching);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(3).text())) metaData.add(AttackMetaData.biting);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(4).text())) metaData.add(AttackMetaData.snatchable);
 
-    Elements tdsSeventhDataRow = selectDataRowTdsByFirstTrHeading(doc, "Slicing Move");
+    Elements tdsSeventhDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Slicing Move");
     if (SerebiiTextParser.yesOrNo(tdsSeventhDataRow.get(0).text())) metaData.add(AttackMetaData.slicing);
     if (SerebiiTextParser.yesOrNo(tdsSeventhDataRow.get(1).text())) metaData.add(AttackMetaData.bullet);
     if (SerebiiTextParser.yesOrNo(tdsSeventhDataRow.get(2).text())) metaData.add(AttackMetaData.wind);
     if (SerebiiTextParser.yesOrNo(tdsSeventhDataRow.get(3).text())) metaData.add(AttackMetaData.powder);
     if (SerebiiTextParser.yesOrNo(tdsSeventhDataRow.get(4).text())) metaData.add(AttackMetaData.metronomeCallable);
 
-    Elements tdsEighthDataRow = selectDataRowTdsByFirstTrHeading(doc, "Affected by Gravity");
+    Elements tdsEighthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Affected by Gravity");
     if (SerebiiTextParser.yesOrNo(tdsEighthDataRow.get(0).text())) metaData.add(AttackMetaData.affectedByGravity);
     if (SerebiiTextParser.yesOrNo(tdsEighthDataRow.get(1).text())) metaData.add(AttackMetaData.defrostsOnUse);
     if (SerebiiTextParser.yesOrNo(tdsEighthDataRow.get(2).text())) metaData.add(AttackMetaData.reflectedByMagicBounceCoat);
@@ -150,12 +135,6 @@ public class AttackDexScraper {
     // Expected formatting is -> 4.17%
     // So we need to remove the percentage sign
     return new BigDecimal(criticalRatioUnparsed.split("%")[0]);
-  }
-
-  private Elements selectDataRowTdsByFirstTrHeading(Document document, String heading) {
-    Element dataRowTr = document.select("tr:contains(" + heading + ")").first().nextElementSibling();
-
-    return dataRowTr.select("> td");
   }
 
   private MoveTarget parseMoveTarget(String input) {

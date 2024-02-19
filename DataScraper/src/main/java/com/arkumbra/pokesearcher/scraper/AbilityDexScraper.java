@@ -1,9 +1,6 @@
 package com.arkumbra.pokesearcher.scraper;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
@@ -12,42 +9,27 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.arkumbra.pokesearcher.scraper.Util.getPageWithDelay;
+import static com.arkumbra.pokesearcher.scraper.Util.selectDataRowTdsByPartOfTrHeading;
+
 // TODO Refactor this to handle dex by generation
 public class AbilityDexScraper {
-  private static final String dexUrlBase = "https://www.serebii.net";
-  private static final String NOT_PRESENT_IN_DEX = "-";
 
   public Set<String> getAllAbilityDexUrls() throws IOException {
-    Set<String> urls = new HashSet<>();
-
-    // SelectURL
-    Document doc = getPageWithDelay("https://www.serebii.net/abilitydex/");
-    log(doc.title());
-
-    Elements abilitiesSelectBoxes = doc.select("select[name=SelectURL] > option");
-
-    for (Element element : abilitiesSelectBoxes) {
-      String shortUrl = element.attr("value");
-      if (shortUrl != null && !shortUrl.equals("#")) {
-        String combinedUrl = dexUrlBase + shortUrl;
-        urls.add(combinedUrl);
-      }
-    }
-
-    return urls;
+    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAbilityDex);
   }
 
   public Ability extractAbilityInfo(String url) throws IOException {
     Ability ability = new Ability();
     Document doc = getPageWithDelay(url);
 
-    String idName = url.replaceAll("https://www.serebii.net/abilitydex/", "").split(".shtml")[0];
+    String idName = url.replaceAll(Constants.serebiiAbilityDex, "").split(".shtml")[0];
     ability.setIdName(idName);
 
     // ------- First data row -----------
     // 0 - Name
     // 1 - Jp. Name
-    Elements tdsFirstDataRow = selectDataRowTdsByFirstTrHeading(doc, "Jp. Name");
+    Elements tdsFirstDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Jp. Name");
 
     // Name
     Name name = new Name();
@@ -66,7 +48,7 @@ public class AbilityDexScraper {
     // 0 - Game's text
 
     // NB: wanted to search by Game's text, but I guess the ' is treated as a special character or something
-    Elements tdsSecondDataRow = selectDataRowTdsByFirstTrHeading(doc, "s text");
+    Elements tdsSecondDataRow = selectDataRowTdsByPartOfTrHeading(doc, "s text");
     ability.setIngameDescription(tdsSecondDataRow.get(0).text());
 
 
@@ -79,7 +61,7 @@ public class AbilityDexScraper {
     Set<AbilityMetaData> metaData = new HashSet<>();
     ability.setMetaData(metaData);
 
-    Elements tdsThirdDataRow = selectDataRowTdsByFirstTrHeading(doc, "Blocks Role Play & Doodle");
+    Elements tdsThirdDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Blocks Role Play & Doodle");
     if (SerebiiTextParser.yesOrNo(tdsThirdDataRow.get(0).text())) metaData.add(AbilityMetaData.blocksRolePlayAndDoodle);
     if (SerebiiTextParser.yesOrNo(tdsThirdDataRow.get(1).text())) metaData.add(AbilityMetaData.blocksReceiveAndPowerOfAlchemy);
     if (SerebiiTextParser.yesOrNo(tdsThirdDataRow.get(2).text())) metaData.add(AbilityMetaData.blocksEntrainment);
@@ -91,17 +73,13 @@ public class AbilityDexScraper {
     // 2 - Removed by Mold Breaker / Turboblaze / Teravolt
     // 3 - Not used if user is Transfoemed
 
-    Elements tdsFourthDataRow = selectDataRowTdsByFirstTrHeading(doc, "Blocks Role Play & Doodle");
+    Elements tdsFourthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Blocks Role Play & Doodle");
     if (SerebiiTextParser.yesOrNo(tdsFourthDataRow.get(0).text())) metaData.add(AbilityMetaData.blocksSkillSwapAndWanderingSpirit);
     if (SerebiiTextParser.yesOrNo(tdsFourthDataRow.get(1).text())) metaData.add(AbilityMetaData.blocksGastroAcidAndNeutralizingAcid);
     if (SerebiiTextParser.yesOrNo(tdsFourthDataRow.get(2).text())) metaData.add(AbilityMetaData.removedByMoldBreakerTurboblazeTeravolt);
     if (SerebiiTextParser.yesOrNo(tdsFourthDataRow.get(3).text())) metaData.add(AbilityMetaData.notUsedIfUserIsTransformed);
 
     return ability;
-  }
-
-  private boolean parseYesNoString(String boolValue) {
-    return boolValue.equals("Yes");
   }
 
   private BigDecimal parseCriticalHitRatio(String criticalRatioUnparsed) {
@@ -116,54 +94,5 @@ public class AbilityDexScraper {
     return new BigDecimal(criticalRatioUnparsed.split("%")[0]);
   }
 
-  private Elements selectDataRowTdsByFirstTrHeading(Document document, String heading) {
-    Element dataRowTr = document.select("tr:contains(" + heading + ")").first().nextElementSibling();
-
-    return dataRowTr.select("> td");
-  }
-
-  private MoveTarget parseMoveTarget(String input) {
-    switch (input) {
-      case "Selected Target": return MoveTarget.SingleSelected;
-      default: throw new RuntimeException("Move Target type parse not implemented [" + input + "]");
-    }
-  }
-
-  private TypeValue extractTypes(Element moveTypeTd) {
-    Attribute href = moveTypeTd.selectFirst("a").attribute("href");
-    String[] splits = href.getValue().split("/");
-    String type = splits[splits.length - 1].replaceAll(".shtml", ""); // remove the .shtml part of the type
-    return TypeValue.valueOf(type);
-  }
-
-  private AttackCategory extractAttackCategory(Element moveCategoryTd) {
-    Attribute href = moveCategoryTd.selectFirst("a").attribute("href");
-    String[] splits = href.getValue().split("/");
-    String category = splits[splits.length - 1].replaceAll(".shtml", ""); // remove the .shtml part of the type
-    switch (category) {
-      case "other": return AttackCategory.status;
-      case "physical": return AttackCategory.physical;
-      case "special": return AttackCategory.special;
-      default: throw new RuntimeException("Unhandled type category [" + category + "]");
-    }
-  }
-
-  private Document getPageWithDelay(String url) {
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace(); // TODO logger
-    }
-
-    try {
-      return Jsoup.connect(url).get();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void log(String... msg) {
-    System.out.println("log -> " + System.lineSeparator() + String.join(System.lineSeparator(), msg));
-  }
 
 }
