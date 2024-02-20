@@ -1,40 +1,19 @@
 package com.arkumbra.pokesearcher.scraper;
 
 import java.util.LinkedHashSet;
-import java.util.Set;
 
 public class PokemonDetails {
-  private Name name;
-  private Pokedex pokedex;
   private LinkedHashSet<TypeValue> types;
   private Moveset moveset;
-  private String formRegion;
+  private String formName;
 
   @Override
   public String toString() {
     return "PokemonDetails{" +
-        "name=" + name +
-        ", pokedex=" + pokedex +
-        ", types=" + types +
+        "types=" + types +
         ", moveset=" + moveset +
-        ", formRegion='" + formRegion + '\'' +
+        ", formName='" + formName + '\'' +
         '}';
-  }
-
-  public Name getName() {
-    return name;
-  }
-
-  public void setName(Name name) {
-    this.name = name;
-  }
-
-  public Pokedex getPokedex() {
-    return pokedex;
-  }
-
-  public void setPokedex(Pokedex pokedex) {
-    this.pokedex = pokedex;
   }
 
   public LinkedHashSet<TypeValue> getTypes() {
@@ -53,11 +32,11 @@ public class PokemonDetails {
     this.moveset = moveset;
   }
 
-  public String getFormRegion() {
-    return formRegion;
+  public String getFormName() {
+    return formName;
   }
 
-  public void setFormRegion(String formRegion) {
-    this.formRegion = formRegion;
+  public void setFormName(String formName) {
+    this.formName = formName;
   }
 }

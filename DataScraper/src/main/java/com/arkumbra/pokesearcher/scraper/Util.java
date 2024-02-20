@@ -51,4 +51,14 @@ public class Util {
     return dataRowTr.select("> td");
   }
 
+  public static Element selectFollowingTdByTdText(Document document, String text) {
+    Elements tdMatch = document.select("table.dextable > td:contains(" + text + ")");
+    if (tdMatch.isEmpty()) return null;
+
+    Element dataRowTr = tdMatch.first().nextElementSibling();
+
+    return dataRowTr;
+  }
+
+
 }

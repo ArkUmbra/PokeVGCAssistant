@@ -5,6 +5,8 @@ import java.util.List;
 
 public class Pokemon {
   private String idName;
+  private Name name;
+  private PokedexNumber pokedexNumber;
   private PokemonDetails details;
   private List<PokemonDetails> alternateForms = new ArrayList<>();
 
@@ -43,5 +45,21 @@ public class Pokemon {
 
   public void setAlternateForms(List<PokemonDetails> alternateForms) {
     this.alternateForms = alternateForms;
+  }
+
+  public Name getName() {
+    return name;
+  }
+
+  public void setName(Name name) {
+    this.name = name;
+  }
+
+  public PokedexNumber getPokedexNumber() {
+    return pokedexNumber;
+  }
+
+  public void setPokedexNumber(PokedexNumber pokedexNumber) {
+    this.pokedexNumber = pokedexNumber;
   }
 }
