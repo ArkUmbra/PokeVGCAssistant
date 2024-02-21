@@ -38,6 +38,8 @@ public class PokedexNumberScraperGen9Test {
             "Blueberry", null,
             "Kitakami", null
         ), tinkaton.getPokedexNumber());
+    assertEquals(new BaseStats(85, 75, 77,70,105,94),
+        tinkaton.getDetails().getBaseStats());
 
     // Pokemon from previous generation that is available in SV
     Pokemon rillaboom = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
@@ -52,6 +54,8 @@ public class PokedexNumberScraperGen9Test {
             "Blueberry", 229,
             "Kitakami", null
         ), rillaboom.getPokedexNumber());
+    assertEquals(new BaseStats(100,125, 90, 60, 70, 85),
+        rillaboom.getDetails().getBaseStats());
 
 
     // No Egg moves
@@ -66,6 +70,8 @@ public class PokedexNumberScraperGen9Test {
             "Kitakami", null
         ), hooh.getPokedexNumber());
     assertFalse(hooh.hasAlternateForms());
+    assertEquals(new BaseStats(106, 130, 90, 110, 154, 90),
+        hooh.getDetails().getBaseStats());
   }
 
   @Test
@@ -131,6 +137,10 @@ public class PokedexNumberScraperGen9Test {
           "swallow"
         ),
         kantoWeezing.getMoveset().getEggMoves());
+
+    assertEquals(galarWeezing.getBaseStats(), kantoWeezing.getBaseStats());
+    assertEquals(new BaseStats(65, 90, 120, 85, 70, 60),
+        galarWeezing.getBaseStats());
 
     // ------
     // Alola
@@ -219,6 +229,8 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(normalDeoxys.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(normalDeoxys.getMoveset().getTmMoves().isEmpty());
     assertTrue(normalDeoxys.getMoveset().getEggMoves().isEmpty());
+    assertEquals(new BaseStats(50, 150, 50, 150, 50, 150),
+        normalDeoxys.getBaseStats());
 
     PokemonDetails attackDeoxys = deoxys.getAlternateForms().get(0);
     assertEquals("Attack Forme", attackDeoxys.getFormName());
@@ -226,6 +238,8 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(attackDeoxys.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(attackDeoxys.getMoveset().getTmMoves().isEmpty());
     assertTrue(attackDeoxys.getMoveset().getEggMoves().isEmpty());
+    assertEquals(new BaseStats(50, 180, 20, 180, 20, 150),
+        attackDeoxys.getBaseStats());
 
     PokemonDetails defenseDeoxys = deoxys.getAlternateForms().get(1);
     assertEquals("Defense Forme", defenseDeoxys.getFormName());
@@ -233,6 +247,8 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(defenseDeoxys.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(defenseDeoxys.getMoveset().getTmMoves().isEmpty());
     assertTrue(defenseDeoxys.getMoveset().getEggMoves().isEmpty());
+    assertEquals(new BaseStats(50, 70, 160, 70, 160, 90),
+        defenseDeoxys.getBaseStats());
 
     PokemonDetails speedDeoxys = deoxys.getAlternateForms().get(2);
     assertEquals("Speed Forme", speedDeoxys.getFormName());
@@ -240,6 +256,8 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(speedDeoxys.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(speedDeoxys.getMoveset().getTmMoves().isEmpty());
     assertTrue(speedDeoxys.getMoveset().getEggMoves().isEmpty());
+    assertEquals(new BaseStats(50, 95, 90, 95, 90, 180),
+        speedDeoxys.getBaseStats());
 
     // All forms get thunderbolt
     Pair<MoveAcquire, String> tmThunderbolt = new Pair<>(new MoveAcquire(MoveAcquireType.TM, 126), "thunderbolt");

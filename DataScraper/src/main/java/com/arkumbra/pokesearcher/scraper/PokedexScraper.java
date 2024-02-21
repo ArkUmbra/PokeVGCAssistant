@@ -84,6 +84,10 @@ public class PokedexScraper {
     // Moveset
     details.setMoveset(extractMoveset(doc));
 
+    // Base Stats
+    Element statsTable = doc.selectFirst("table.dextable:contains(Base Stats - Total)");
+    details.setBaseStats(parseBaseStats(statsTable));
+
     pokemon.setDetails(details);
 
     return pokemon;
@@ -120,10 +124,6 @@ public class PokedexScraper {
       PokemonDetails pokemonDetails = new PokemonDetails();
       pokemonDetails.setFormName(pokemonFormName);
 
-      // Types
-//      Element typeElementsTd = dexTableNameNumberDataTds.get(4);
-      // TODO some annoyance about the fact that sometimes it's "Alola Form" and sometimes it's "Alola form"
-
       // a. Try searching by form name (just use the first few characters)
       Element typeTd = dexTableNameNumberDataTds.get(4);
       Element subTypeTd = typeTd;
@@ -136,15 +136,13 @@ public class PokedexScraper {
         subTypeTd = typeTd.select("tr").get(formOrder);
       }
 
-//      Element typeContainerTd = Util.selectFollowingTdByTdText(doc, pokemonFormName.substring(0, 5));
-//       b. else, try searching for the default
-//      if (typeContainerTd == null) typeContainerTd = Util.selectFollowingTdByTdText(doc, "Normal Form");
-//      if (typeContainerTd == null) typeContainerTd = dexTableNameNumberDataTds.get(4);
-
       pokemonDetails.setTypes(extractTypes(subTypeTd.select("a")));
-
       pokemonDetails.setMoveset(extractMovesetForMultiForm(doc,
           formOrder == 0 ? "Normal" : pokemonFormName));
+
+      // Base Stats
+      Elements allStatsTable = doc.select("table.dextable:contains(Base Stats - Total)");
+      pokemonDetails.setBaseStats(parseBaseStats(allStatsTable.get(formOrder)));
 
       forms.add(pokemonDetails);
     }
@@ -334,6 +332,19 @@ public class PokedexScraper {
 
       eggMoves.add(movename);
     }
+  }
+
+  private BaseStats parseBaseStats(Element statsDexTable) {
+    Elements statsTds = statsDexTable.select("tbody > tr").get(2).select("td");
+
+    return new BaseStats(
+        Integer.parseInt(statsTds.get(1).text()),
+        Integer.parseInt(statsTds.get(2).text()),
+        Integer.parseInt(statsTds.get(3).text()),
+        Integer.parseInt(statsTds.get(4).text()),
+        Integer.parseInt(statsTds.get(5).text()),
+        Integer.parseInt(statsTds.get(6).text())
+    );
   }
 
   private void log(String... msg) {
