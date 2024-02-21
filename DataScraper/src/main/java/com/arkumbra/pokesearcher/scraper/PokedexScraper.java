@@ -8,6 +8,7 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.arkumbra.pokesearcher.scraper.Util.getPageWithDelay;
 
@@ -81,6 +82,15 @@ public class PokedexScraper {
     Elements typeElements = dexTableNameNumberDataTds.get(4).select(" > a");
     details.setTypes(extractTypes(typeElements));
 
+    // Abilities
+    Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
+    details.setAbilities(parseAbilitiesFromTextString(abilityHeaderBlockTd.text()));
+//
+//    Element abilityBlockTd = doc.select("tr:contains(Abilities:)").first() // skip header, go to data
+//        .nextElementSibling()
+//        .selectFirst("td");
+//    details.setAbilities(parseAbilitiesForSinglePokemon(abilityBlockTd));
+
     // Moveset
     details.setMoveset(extractMoveset(doc));
 
@@ -107,6 +117,10 @@ public class PokedexScraper {
         .toList();
 
     // First form can also be considered 'Normal', so we can use that when searching for matching data
+
+    Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
+    String[] abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
+
 
     // TDs
     // 0 - Name
@@ -135,6 +149,9 @@ public class PokedexScraper {
         // "Alternate Forms" section, so we should just be able to grab the TR by its ID/order
         subTypeTd = typeTd.select("tr").get(formOrder);
       }
+
+      // Abilities
+      pokemonDetails.setAbilities(parseAbilitiesFromTextString(abilityTextSplitByForm[formOrder]));
 
       pokemonDetails.setTypes(extractTypes(subTypeTd.select("a")));
       pokemonDetails.setMoveset(extractMovesetForMultiForm(doc,
@@ -171,6 +188,67 @@ public class PokedexScraper {
     return pokemon;
   }
 
+  private String[] splitUpAbilitiesHeaderStringForMultiFormPokemon(String text, List<String> formNames) {
+    // Example abilities header text for multi form Pokemon before process
+    // Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)
+
+    // TODO take account of form/forme spelling (sometimes it seems the difference is unintentional..)
+
+
+  }
+
+  private Abilities parseAbilitiesFromTextString(String abilityHeaderBlockText) {
+    // For multi-form Pokemon the page uses 'Hidden' instead of 'Hidden Ability' which is kind of annoying, but that's
+    // why have the partial text comparison here
+    boolean hasHiddenAbility = abilityHeaderBlockText.contains("(Hidden");
+
+    // Example text of abilityHeaderBlockTd.text() before processing
+    // Abilities: Overgrow - Grassy Surge (Hidden Ability)
+    List<String> abilityNameIds = Arrays.stream(
+        abilityHeaderBlockText
+        .replace("(Hidden Ability)", "")
+        .replace("(Hidden)", "")
+        .replace("Abilities:", "")
+        .trim().split(" - ")
+    ).map(humanReadableAbility -> {
+      return humanReadableAbility
+          .trim()
+          .toLowerCase()
+          .replace(" ", ""); // remove spaces
+    }).collect(Collectors.toList());
+
+    String hiddenAbilityNameId = null;
+    if (hasHiddenAbility) {
+      hiddenAbilityNameId = abilityNameIds.remove(abilityNameIds.size() - 1);
+    }
+
+    return new Abilities(abilityNameIds, hiddenAbilityNameId);
+  }
+
+//  private Abilities parseAbilitiesForSinglePokemon(Element abilityBlockTd) {
+//    boolean hasHiddenAbility = abilityBlockTd.text().contains("Hidden Ability:");
+//
+//    LinkedList<String> abilityNameIds = new LinkedList<>();
+//    abilityBlockTd.select("a").forEach(aTag -> {
+//      String abilityShortLink = aTag.attribute("href").getValue(); // e.g. /abilitydex/owntempo.shtml
+//
+//      // Sometimes we may pick up some extraneous hrefs, so try to make sure these are only abilities
+//      // e.g. for Rillaboom https://www.serebii.net/pokedex-sv/rillaboom/, there is a link to '/games/terrain' as part
+//      //  of the explanation for grassy surge. Hopefully there are no actual ability dex links in the /explanation/
+//      // of a Pokemon's actual abilities otherwise they will get picked up here by mistake
+//      if (abilityShortLink.startsWith("/abilitydex/")) {
+//        abilityNameIds.add(abilityShortLink.replace("/abilitydex/", "").replace(".shtml", ""));
+//      }
+//
+//    });
+//
+//    String hiddenAbilityNameId = null;
+//    if (hasHiddenAbility) {
+//      hiddenAbilityNameId = abilityNameIds.removeLast();
+//    }
+//
+//    return new Abilities(abilityNameIds, hiddenAbilityNameId);
+//  }
 
 
   private Map<String, Integer> extractDexInfo(Elements tds) {

@@ -38,6 +38,8 @@ public class PokedexNumberScraperGen9Test {
             "Blueberry", null,
             "Kitakami", null
         ), tinkaton.getPokedexNumber());
+    assertEquals(new Abilities(List.of("moldbreaker", "owntempo"), "pickpocket"),
+        tinkaton.getDetails().getAbilities());
     assertEquals(new BaseStats(85, 75, 77,70,105,94),
         tinkaton.getDetails().getBaseStats());
 
@@ -54,6 +56,8 @@ public class PokedexNumberScraperGen9Test {
             "Blueberry", 229,
             "Kitakami", null
         ), rillaboom.getPokedexNumber());
+    assertEquals(new Abilities(List.of("overgrow"), "grassysurge"),
+        rillaboom.getDetails().getAbilities());
     assertEquals(new BaseStats(100,125, 90, 60, 70, 85),
         rillaboom.getDetails().getBaseStats());
 
@@ -70,6 +74,8 @@ public class PokedexNumberScraperGen9Test {
             "Kitakami", null
         ), hooh.getPokedexNumber());
     assertFalse(hooh.hasAlternateForms());
+    assertEquals(new Abilities(List.of("pressure"), "regenerator"),
+        hooh.getDetails().getAbilities());
     assertEquals(new BaseStats(106, 130, 90, 110, 154, 90),
         hooh.getDetails().getBaseStats());
   }
