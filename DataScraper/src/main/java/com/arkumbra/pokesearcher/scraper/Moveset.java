@@ -2,12 +2,13 @@ package com.arkumbra.pokesearcher.scraper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Moveset {
-  private List<Pair<MoveAcquire, String>> levelUpMoves = new ArrayList<>();
-  private List<Pair<MoveAcquire, String>> tmMoves = new ArrayList<>();
-  private List<String> eggMoves = new ArrayList<>();
+  private final List<Pair<MoveAcquire, String>> levelUpMoves = new ArrayList<>();
+  private final List<Pair<MoveAcquire, String>> tmMoves = new ArrayList<>();
+  private final List<String> eggMoves = new ArrayList<>();
 
   @Override
   public String toString() {
@@ -42,5 +43,18 @@ public class Moveset {
 
   public List<String> getEggMoves() {
     return eggMoves;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Moveset moveset = (Moveset) o;
+    return Objects.equals(levelUpMoves, moveset.levelUpMoves) && Objects.equals(tmMoves, moveset.tmMoves) && Objects.equals(eggMoves, moveset.eggMoves);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(levelUpMoves, tmMoves, eggMoves);
   }
 }

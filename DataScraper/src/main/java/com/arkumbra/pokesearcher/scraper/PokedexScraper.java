@@ -143,7 +143,8 @@ public class PokedexScraper {
 
       pokemonDetails.setTypes(extractTypes(subTypeTd.select("a")));
 
-      pokemonDetails.setMoveset(extractMovesetForMultiForm(doc, pokemonFormName));
+      pokemonDetails.setMoveset(extractMovesetForMultiForm(doc,
+          formOrder == 0 ? "Normal" : pokemonFormName));
 
       forms.add(pokemonDetails);
     }
@@ -235,15 +236,17 @@ public class PokedexScraper {
         "table.dextable:contains(" + formName + " Level Up)", "table.dextable:contains(Standard Level Up)");
     parseLevelOrTmMoveset(moveset.getLevelUpMoves(), levelUpMovesTable);
 
-    // TODO filter by form column
-//    Element tmMovesTable = doc.selectFirst("table.dextable:contains(Technical Machine Attacks)");
-//    parseLevelOrTmMoveset(moveset.getTmMoves(), tmMovesTable);
-//
-//    // TODO filter by form column
-//    Element eggMovesTable = doc.selectFirst("table.dextable:contains(Egg Moves)");
-//    if (eggMovesTable != null) {
-//      parseEggMovesMoveset(moveset.getEggMoves(), eggMovesTable);
-//    }
+    Element tmMovesTable = doc.selectFirst("table.dextable:contains(Technical Machine Attacks)");
+    Elements tmMovesTableSubHeadingTds = tmMovesTable.select("tbody > tr").get(1).select("th");
+    // Check if the final column of the TM table is 'Form'. If so, some TMs may be form-exclusive
+    boolean tmsFilteredByForm = tmMovesTableSubHeadingTds.get(tmMovesTableSubHeadingTds.size() - 1).text().equals("Form");
+    parseLevelOrTmMoveset(moveset.getTmMoves(), tmMovesTable, (tmsFilteredByForm ? formName : null));
+
+    // Egg moves are seemingly the same regardless of form
+    Element eggMovesTable = doc.selectFirst("table.dextable:contains(Egg Moves)");
+    if (eggMovesTable != null) {
+      parseEggMovesMoveset(moveset.getEggMoves(), eggMovesTable);
+    }
 
     return moveset;
   }
@@ -257,26 +260,41 @@ public class PokedexScraper {
   }
 
 
-
   private void parseLevelOrTmMoveset(List<Pair<MoveAcquire, String>> moves, Element dexTable) {
+    parseLevelOrTmMoveset(moves, dexTable, null);
+  }
+
+  private void parseLevelOrTmMoveset(List<Pair<MoveAcquire, String>> moves, Element dexTable, String optionalFormFilter) {
+    // Get a better match when searching by form name. Sometimes the form filter name will be 'alola' but the move will
+    // be listed as available for 'Alolan'...
+    String optionalFormFilterLeadingChars = optionalFormFilter == null ? null : optionalFormFilter.substring(0, 5);
+
     // For now, we just want the levels and move names. The full move/attack data will be scraped
     // from https://www.serebii.net/attackdex-sv/ later
-
-    Elements movesetsInfoTrs = dexTable
-        .select("tbody > tr");
+    Elements movesetsInfoTrs = dexTable.select("> tbody > tr");
 
     // Standard level up moves
     // 0 first row - heading (skip)
     // 1 second row - subheadings (skip)
     // After that data for each move split across two TRs
-    // 2 (a) - data (then by td... 0) Level, Attack Name (+ Link), Type, Category, Attack power, Accuracy, PP, Effect Percentage
+    // 2 (a) - data (then by td... 0) Level, Attack Name (+ Link), Type, Category, Attack power, Accuracy, PP, Effect Percentage, (Form)
     // 3 (b) - description (one td)
     for (int i = 2; i < movesetsInfoTrs.size(); i += 2) {
       Element dataTr = movesetsInfoTrs.get(i);
-      Elements dataTds = dataTr.select("td");
+      Elements dataTds = dataTr.select("> td");
 
-      String level = dataTds.get(0).text();
-      MoveAcquire acquire = MoveAcquire.of(level);
+      if (optionalFormFilterLeadingChars != null) {
+        Elements directTds = dataTr.select(" > td");
+        List<String> formsThatCanAccessThisMove = directTds.get(directTds.size() - 1)
+            .select("img").eachAttr("alt");
+        // Just do a partial match to work around some edge cases where optionalFormFilter will be 'Normal'
+        // but the alt text will be Normal Forme
+        if (formsThatCanAccessThisMove.stream().noneMatch(form -> form.startsWith(optionalFormFilterLeadingChars)))
+          continue;
+      }
+
+      String levelOrTm = dataTds.get(0).text();
+      MoveAcquire acquire = MoveAcquire.of(levelOrTm);
 
       String movePartialLink = dataTds.get(1).select("a").get(0).attribute("href").getValue();
       String[] splits = movePartialLink.split("/");

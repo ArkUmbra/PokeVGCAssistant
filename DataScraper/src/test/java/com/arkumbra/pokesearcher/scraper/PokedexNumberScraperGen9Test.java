@@ -77,6 +77,13 @@ public class PokedexNumberScraperGen9Test {
     System.out.println(weezing);
 
     assertNames(new Name("Weezing"), weezing.getName());
+    assertPokedex(
+        mapOfNullable(
+            "Paldea", null,
+            "National", 110,
+            "Blueberry", null,
+            "Kitakami", 136
+        ), weezing.getPokedexNumber());
     assertTrue(weezing.hasAlternateForms());
     assertEquals(1, weezing.getAlternateForms().size());
 
@@ -87,6 +94,43 @@ public class PokedexNumberScraperGen9Test {
     PokemonDetails galarWeezing = weezing.getAlternateForms().get(0);
     assertEquals("Galarian Form", galarWeezing.getFormName());
     assertEquals(linkedHashSet(TypeValue.poison, TypeValue.fairy), galarWeezing.getTypes());
+
+    assertTrue(galarWeezing.getMoveset().getLevelUpMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.Relearner), "aromaticmist")));
+    assertFalse(kantoWeezing.getMoveset().getLevelUpMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.Relearner), "aromaticmist")));
+
+    assertTrue(galarWeezing.getMoveset().getTmMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.TM, 79), "dazzlinggleam")));
+    assertFalse(kantoWeezing.getMoveset().getTmMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.TM, 79), "dazzlinggleam")));
+
+    assertTrue(galarWeezing.getMoveset().getTmMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.TM, 91), "toxicspikes")));
+    assertTrue(kantoWeezing.getMoveset().getTmMoves()
+        .contains(new Pair<>(new MoveAcquire(MoveAcquireType.TM, 91), "toxicspikes")));
+
+    // Apparently Galar Weezing gets all the moves of normal Weezing along with some extra
+    kantoWeezing.getMoveset().getLevelUpMoves().forEach(levelUpMove -> {
+      assertTrue(galarWeezing.getMoveset().getLevelUpMoves().stream().map(Pair::getRight).toList()
+          .contains(levelUpMove.getRight()), "Galar Weezing doesn't learn " + levelUpMove);
+    });
+
+    kantoWeezing.getMoveset().getTmMoves().forEach(levelUpMove -> {
+      assertTrue(galarWeezing.getMoveset().getTmMoves().stream().map(Pair::getRight).toList()
+          .contains(levelUpMove.getRight()), "Galar Weezing doesn't learn " + levelUpMove);
+    });
+
+    assertEquals(kantoWeezing.getMoveset().getEggMoves(), galarWeezing.getMoveset().getEggMoves());
+    assertEquals(List.of(
+          "curse",
+          "spite",
+          "painsplit",
+          "stockpile",
+          "spitup",
+          "swallow"
+        ),
+        kantoWeezing.getMoveset().getEggMoves());
 
     // ------
     // Alola
@@ -100,10 +144,18 @@ public class PokedexNumberScraperGen9Test {
     PokemonDetails kantoSandshrew = sandshrew.getDetails();
     assertEquals("Kantonian Form", kantoSandshrew.getFormName());
     assertEquals(linkedHashSet(TypeValue.ground), kantoSandshrew.getTypes());
+    assertFalse(kantoSandshrew.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(kantoSandshrew.getMoveset().getTmMoves().isEmpty());
+    assertFalse(kantoSandshrew.getMoveset().getEggMoves().isEmpty());
 
     PokemonDetails alolaSandshrew = sandshrew.getAlternateForms().get(0);
     assertEquals("Alola Form", alolaSandshrew.getFormName());
     assertEquals(linkedHashSet(TypeValue.ice, TypeValue.steel), alolaSandshrew.getTypes());
+    assertFalse(alolaSandshrew.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(alolaSandshrew.getMoveset().getTmMoves().isEmpty());
+    assertFalse(alolaSandshrew.getMoveset().getEggMoves().isEmpty());
+
+
 
     // -----
     // Use of 'forme'
@@ -118,6 +170,12 @@ public class PokedexNumberScraperGen9Test {
     PokemonDetails incarnateLandorus = landorus.getDetails();
     assertEquals("Incarnate Forme", incarnateLandorus.getFormName());
     assertEquals(linkedHashSet(TypeValue.ground, TypeValue.flying), incarnateLandorus.getTypes());
+
+    assertEquals(landorus.getDetails().getMoveset(), incarnateLandorus.getMoveset());
+    assertFalse(landorus.getDetails().getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(landorus.getDetails().getMoveset().getTmMoves().isEmpty());
+    assertTrue(landorus.getDetails().getMoveset().getEggMoves().isEmpty(),
+        "Contained egg moves!! " + landorus.getDetails().getMoveset().getEggMoves());
 
     PokemonDetails therianLandorus = landorus.getAlternateForms().get(0);
     assertEquals("Therian Forme", therianLandorus.getFormName());
@@ -140,6 +198,12 @@ public class PokedexNumberScraperGen9Test {
     assertEquals("Hero Form", heroPalafin.getFormName());
     assertEquals(linkedHashSet(TypeValue.water), heroPalafin.getTypes());
 
+    // movesets should be the same between forms
+    assertEquals(zeroPalafin.getMoveset(), heroPalafin.getMoveset());
+    assertFalse(zeroPalafin.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(zeroPalafin.getMoveset().getTmMoves().isEmpty());
+    assertFalse(zeroPalafin.getMoveset().getEggMoves().isEmpty());
+
     // -----
     // More than 2 forms
     Pokemon deoxys = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/deoxys/");
@@ -152,18 +216,47 @@ public class PokedexNumberScraperGen9Test {
     PokemonDetails normalDeoxys = deoxys.getDetails();
     assertEquals("Normal Forme", normalDeoxys.getFormName());
     assertEquals(linkedHashSet(TypeValue.psychic), normalDeoxys.getTypes());
+    assertFalse(normalDeoxys.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(normalDeoxys.getMoveset().getTmMoves().isEmpty());
+    assertTrue(normalDeoxys.getMoveset().getEggMoves().isEmpty());
 
     PokemonDetails attackDeoxys = deoxys.getAlternateForms().get(0);
     assertEquals("Attack Forme", attackDeoxys.getFormName());
     assertEquals(linkedHashSet(TypeValue.psychic), attackDeoxys.getTypes());
+    assertFalse(attackDeoxys.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(attackDeoxys.getMoveset().getTmMoves().isEmpty());
+    assertTrue(attackDeoxys.getMoveset().getEggMoves().isEmpty());
 
     PokemonDetails defenseDeoxys = deoxys.getAlternateForms().get(1);
     assertEquals("Defense Forme", defenseDeoxys.getFormName());
     assertEquals(linkedHashSet(TypeValue.psychic), defenseDeoxys.getTypes());
+    assertFalse(defenseDeoxys.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(defenseDeoxys.getMoveset().getTmMoves().isEmpty());
+    assertTrue(defenseDeoxys.getMoveset().getEggMoves().isEmpty());
 
     PokemonDetails speedDeoxys = deoxys.getAlternateForms().get(2);
     assertEquals("Speed Forme", speedDeoxys.getFormName());
     assertEquals(linkedHashSet(TypeValue.psychic), speedDeoxys.getTypes());
+    assertFalse(speedDeoxys.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(speedDeoxys.getMoveset().getTmMoves().isEmpty());
+    assertTrue(speedDeoxys.getMoveset().getEggMoves().isEmpty());
+
+    // All forms get thunderbolt
+    Pair<MoveAcquire, String> tmThunderbolt = new Pair<>(new MoveAcquire(MoveAcquireType.TM, 126), "thunderbolt");
+    assertTrue(deoxys.getDetails().getMoveset().getTmMoves().contains(tmThunderbolt));
+    deoxys.getAlternateForms().forEach(form -> assertTrue(form.getMoveset().getTmMoves().contains(tmThunderbolt)));
+
+    // Only defense and speed form get amnesia
+    Pair<MoveAcquire, String> tmAmnesia = new Pair<>(new MoveAcquire(MoveAcquireType.TM, 128), "amnesia");
+    assertFalse(deoxys.getDetails().getMoveset().getTmMoves().contains(tmAmnesia));
+    deoxys.getAlternateForms().forEach(form -> {
+      if (form.getFormName().equals("Defense Forme") || form.getFormName().equals("Speed Forme")) {
+        assertTrue(form.getMoveset().getTmMoves().contains(tmAmnesia), "Expected " + form.getFormName() + " to learn Amnesia");
+      } else {
+        assertFalse(form.getMoveset().getTmMoves().contains(tmAmnesia), "Expected " + form.getFormName() + " to not learn Amnesia");
+      }
+
+    });
   }
 
   private <A> LinkedHashSet<A> linkedHashSet(A... objects) {

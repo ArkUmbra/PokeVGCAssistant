@@ -1,8 +1,21 @@
 package com.arkumbra.pokesearcher.scraper;
 
+import java.util.Objects;
+
 public class MoveAcquire {
   MoveAcquireType acquireType;
   int numberValue;
+
+  private MoveAcquire() {}
+
+  public MoveAcquire(MoveAcquireType acquireType) {
+    this.acquireType = acquireType;
+  }
+
+  public MoveAcquire(MoveAcquireType acquireType, int numberValue) {
+    this.acquireType = acquireType;
+    this.numberValue = numberValue;
+  }
 
   public static MoveAcquire of(String value) {
     MoveAcquire moveAcquire = new MoveAcquire();
@@ -30,5 +43,18 @@ public class MoveAcquire {
     } else {
       return acquireType.toString();
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MoveAcquire that = (MoveAcquire) o;
+    return numberValue == that.numberValue && acquireType == that.acquireType;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(acquireType, numberValue);
   }
 }

@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 
 public class PokemonDetails {
   private LinkedHashSet<TypeValue> types;
+  private BaseStats baseStats;
   private Moveset moveset;
   private String formName;
 
@@ -11,6 +12,7 @@ public class PokemonDetails {
   public String toString() {
     return "PokemonDetails{" +
         "types=" + types +
+        ", baseStats=" + baseStats +
         ", moveset=" + moveset +
         ", formName='" + formName + '\'' +
         '}';
@@ -22,6 +24,14 @@ public class PokemonDetails {
 
   public void setTypes(LinkedHashSet<TypeValue> types) {
     this.types = types;
+  }
+
+  public BaseStats getBaseStats() {
+    return baseStats;
+  }
+
+  public void setBaseStats(BaseStats baseStats) {
+    this.baseStats = baseStats;
   }
 
   public Moveset getMoveset() {
