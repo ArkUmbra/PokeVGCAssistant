@@ -119,7 +119,7 @@ public class PokedexScraper {
     // First form can also be considered 'Normal', so we can use that when searching for matching data
 
     Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
-    String[] abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
+    List<String> abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
 
 
     // TDs
@@ -151,7 +151,10 @@ public class PokedexScraper {
       }
 
       // Abilities
-      pokemonDetails.setAbilities(parseAbilitiesFromTextString(abilityTextSplitByForm[formOrder]));
+      // Some multi form Pokemon just share one set of abilities, so  make sure we don't go out of bounds by trying
+      // to select an ability string that doesn't exist.
+      String abilityTextString = abilityTextSplitByForm.get(Math.min(formOrder, abilityTextSplitByForm.size() - 1));
+      pokemonDetails.setAbilities(parseAbilitiesFromTextString(abilityTextString));
 
       pokemonDetails.setTypes(extractTypes(subTypeTd.select("a")));
       pokemonDetails.setMoveset(extractMovesetForMultiForm(doc,
@@ -188,13 +191,69 @@ public class PokedexScraper {
     return pokemon;
   }
 
-  private String[] splitUpAbilitiesHeaderStringForMultiFormPokemon(String text, List<String> formNames) {
+  protected List<String> splitUpAbilitiesHeaderStringForMultiFormPokemon(String text) {
     // Example abilities header text for multi form Pokemon before process
     // Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)
+    // Abilities: Defiant (Teal Mask) - Water Absorb (Wellspring Mask) - Mold Breaker (Hearthflame Mask) - Sturdy (Cornerstone Mask)
 
     // TODO take account of form/forme spelling (sometimes it seems the difference is unintentional..)
 
+    // Because matching the form names is unreliable due to seemingly random use of form vs forme, we will just detect
+    // brackets and split there. Except in the case of '(Hidden)', which we need to include in the output
 
+    // Remove the leading 'Abilities:  ' string
+    text = text.replace("Abilities: ", "");
+
+    List<String> results = new ArrayList<>();
+    StringBuilder currentAbilityString = new StringBuilder();
+
+    String hiddenTag = "(Hidden)";
+
+    for (int i = 0; i < text.length(); i++) {
+
+      if (text.charAt(i) == '(') {
+        // Start of either (Hidden) or (form name)
+        String bracketedWord = parseBracketedWord(text, i);
+
+        // Fast-forward the index to the end of this bracketed word we've found
+        i += bracketedWord.length();
+
+        if (bracketedWord.equals(hiddenTag)) {
+          // We found the hidden ability, so let's just add it to the current word and
+          currentAbilityString.append(hiddenTag);
+
+        } else {
+          // Seems like we found the form name, so lets store the current word and reset
+          results.add(currentAbilityString.toString().trim());
+          currentAbilityString = new StringBuilder();
+
+          // Sometimes there's some formatting junk after the form name, so fast forward until we get to the next
+          // actual word
+          while (i < text.length() - 1 && ! Character.isAlphabetic(text.charAt(i + 1)))
+            i++;
+        }
+
+
+      } else {
+        // Append to the end of our current ability string
+        currentAbilityString.append(text.charAt(i));
+      }
+    }
+
+    if (! currentAbilityString.isEmpty())
+      results.add(currentAbilityString.toString());
+
+    return results;
+  }
+
+  private String parseBracketedWord(String word, int indexOfOpenBracket) {
+    for (int i = indexOfOpenBracket; i < word.length(); i++) {
+      if (word.charAt(i) == ')') {
+        return word.substring(indexOfOpenBracket, i + 1);
+      }
+    }
+
+    throw new RuntimeException("Couldn't find closing bracket of bracketed word");
   }
 
   private Abilities parseAbilitiesFromTextString(String abilityHeaderBlockText) {
@@ -209,7 +268,7 @@ public class PokedexScraper {
         .replace("(Hidden Ability)", "")
         .replace("(Hidden)", "")
         .replace("Abilities:", "")
-        .trim().split(" - ")
+        .trim().split("-")
     ).map(humanReadableAbility -> {
       return humanReadableAbility
           .trim()

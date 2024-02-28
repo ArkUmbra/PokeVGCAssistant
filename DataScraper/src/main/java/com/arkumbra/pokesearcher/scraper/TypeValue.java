@@ -19,4 +19,10 @@ public enum TypeValue {
   ghost,
   flying,
   bug
+  ;
+
+  public Effectiveness effectivenessAgainst(TypeValue... opposingTypes) {
+    return TypeEffectiveness.of(this).against(opposingTypes);
+  }
+
 }

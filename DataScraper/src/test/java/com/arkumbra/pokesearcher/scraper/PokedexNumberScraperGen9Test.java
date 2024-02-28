@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.*;
 
-import static com.arkumbra.pokesearcher.scraper.TestUtils.assertListContents;
+import static com.arkumbra.pokesearcher.scraper.TestUtils.assertOptionalEmpty;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PokedexNumberScraperGen9Test {
@@ -148,6 +148,16 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(new BaseStats(65, 90, 120, 85, 70, 60),
         galarWeezing.getBaseStats());
 
+    assertEquals(2, kantoWeezing.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(kantoWeezing.getAbilities().getStandardAbilityNameIds().contains("levitate"));
+    assertTrue(kantoWeezing.getAbilities().getStandardAbilityNameIds().contains("neutralizinggas"));
+    assertEquals("stench", kantoWeezing.getAbilities().getHiddenAbilityNameId().get());
+
+    assertEquals(2, galarWeezing.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(galarWeezing.getAbilities().getStandardAbilityNameIds().contains("levitate"));
+    assertTrue(galarWeezing.getAbilities().getStandardAbilityNameIds().contains("neutralizinggas"));
+    assertEquals("mistysurge", galarWeezing.getAbilities().getHiddenAbilityNameId().get());
+
     // ------
     // Alola
     Pokemon sandshrew = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/sandshrew/");
@@ -170,6 +180,14 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(alolaSandshrew.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(alolaSandshrew.getMoveset().getTmMoves().isEmpty());
     assertFalse(alolaSandshrew.getMoveset().getEggMoves().isEmpty());
+
+    assertEquals(1, kantoSandshrew.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(kantoSandshrew.getAbilities().getStandardAbilityNameIds().contains("sandveil"));
+    assertEquals("sandrush", kantoSandshrew.getAbilities().getHiddenAbilityNameId().get());
+
+    assertEquals(1, alolaSandshrew.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(alolaSandshrew.getAbilities().getStandardAbilityNameIds().contains("snowcloak"));
+    assertEquals("slushrush", alolaSandshrew.getAbilities().getHiddenAbilityNameId().get());
 
 
 
@@ -197,6 +215,15 @@ public class PokedexNumberScraperGen9Test {
     assertEquals("Therian Forme", therianLandorus.getFormName());
     assertEquals(linkedHashSet(TypeValue.ground, TypeValue.flying), therianLandorus.getTypes());
 
+
+    assertEquals(1, incarnateLandorus.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(incarnateLandorus.getAbilities().getStandardAbilityNameIds().contains("sandforce"));
+    assertEquals("sheerforce", incarnateLandorus.getAbilities().getHiddenAbilityNameId().get());
+
+    assertEquals(1, therianLandorus.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(therianLandorus.getAbilities().getStandardAbilityNameIds().contains("intimidate"));
+    assertOptionalEmpty(therianLandorus.getAbilities().getHiddenAbilityNameId());
+
     // -----
     // Extra form due to ability activation
     Pokemon palafin = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/palafin/");
@@ -219,6 +246,11 @@ public class PokedexNumberScraperGen9Test {
     assertFalse(zeroPalafin.getMoveset().getLevelUpMoves().isEmpty());
     assertFalse(zeroPalafin.getMoveset().getTmMoves().isEmpty());
     assertFalse(zeroPalafin.getMoveset().getEggMoves().isEmpty());
+
+    assertEquals(heroPalafin.getAbilities(), zeroPalafin.getAbilities());
+    assertEquals(1, heroPalafin.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(heroPalafin.getAbilities().getStandardAbilityNameIds().contains("zerotohero"));
+    assertOptionalEmpty(heroPalafin.getAbilities().getHiddenAbilityNameId());
 
     // -----
     // More than 2 forms
@@ -281,6 +313,44 @@ public class PokedexNumberScraperGen9Test {
       }
 
     });
+
+
+    assertEquals(normalDeoxys.getAbilities(), attackDeoxys.getAbilities());
+    assertEquals(normalDeoxys.getAbilities(), defenseDeoxys.getAbilities());
+    assertEquals(normalDeoxys.getAbilities(), speedDeoxys.getAbilities());
+    assertEquals(1, normalDeoxys.getAbilities().getStandardAbilityNameIds().size());
+    assertTrue(normalDeoxys.getAbilities().getStandardAbilityNameIds().contains("pressure"));
+    assertOptionalEmpty(normalDeoxys.getAbilities().getHiddenAbilityNameId());
+
+    // TODO Ogerpon
+  }
+
+  @Test
+  public void testSplitMultiFormAbilityStrings() {
+    // Weezing
+    String abilitiesRaw = "Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)";
+//    List<String> formNames = List.of("Normal", "Galarian Form");
+
+    List<String> expected = List.of(
+        "Levitate - Neutralizing Gas - Stench (Hidden)",
+        "Levitate- Neutralizing Gas - Misty Surge (Hidden)"
+    );
+
+    List<String> result = scraper.splitUpAbilitiesHeaderStringForMultiFormPokemon(abilitiesRaw);
+    assertEquals(expected, result);
+
+    // Ogerpon
+    abilitiesRaw = "Abilities: Defiant (Teal Mask) - Water Absorb (Wellspring Mask) - Mold Breaker (Hearthflame Mask) - Sturdy (Cornerstone Mask)";
+
+    expected = List.of(
+        "Defiant",
+        "Water Absorb",
+        "Mold Breaker",
+        "Sturdy"
+    );
+
+    result = scraper.splitUpAbilitiesHeaderStringForMultiFormPokemon(abilitiesRaw);
+    assertEquals(expected, result);
   }
 
   private <A> LinkedHashSet<A> linkedHashSet(A... objects) {
