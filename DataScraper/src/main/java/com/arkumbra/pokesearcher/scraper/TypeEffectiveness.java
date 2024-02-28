@@ -61,7 +61,7 @@ public enum TypeEffectiveness {
       Set.of(TypeValue.electric)
   ),
   rock(
-      TypeValue.fire,
+      TypeValue.rock,
       Set.of(TypeValue.water, TypeValue.ground, TypeValue.rock),
       Set.of(TypeValue.fire, TypeValue.grass, TypeValue.ice, TypeValue.bug, TypeValue.steel, TypeValue.fairy),
       Set.of()
