@@ -6,14 +6,19 @@ public class CompositeTypeEffectiveness {
 
   private final Map<Effectiveness, Set<TypeValue>> effectivenessWhenAttackedBy = new HashMap<>();
   private final Map<TypeValue, Effectiveness> byType = new HashMap<>();
-  private final Set<TypeValue> types;
+  private final TypeCombination types;
 
   public CompositeTypeEffectiveness(TypeValue... theseTypes) {
-    types = Set.of(theseTypes);
+    this(new TypeCombination(theseTypes));
+  }
+
+  public CompositeTypeEffectiveness(TypeCombination theseTypes) {
+    this.types = theseTypes;
+
     for (TypeValue value : TypeValue.values())
       byType.put(value, Effectiveness.effective);
 
-    for (TypeValue type : theseTypes) {
+    for (TypeValue type : theseTypes.getTypes()) {
       TypeEffectiveness typeEffectiveness = TypeEffectiveness.of(type);
 
       for (TypeValue immunity : typeEffectiveness.getImmunities()) {
@@ -51,8 +56,13 @@ public class CompositeTypeEffectiveness {
     return byType;
   }
 
-  public Set<TypeValue> getCompositeTypes() {
+  public TypeCombination getCompositeTypes() {
     return types;
+  }
+
+  public boolean takesReducedDamageFrom(TypeValue attackingType) {
+    Effectiveness effectiveness = byType.get(attackingType);
+    return effectiveness.isReducedEffectiveness();
   }
 
   @Override

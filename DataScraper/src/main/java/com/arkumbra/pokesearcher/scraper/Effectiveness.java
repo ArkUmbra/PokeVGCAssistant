@@ -54,4 +54,8 @@ public enum Effectiveness {
       return decrease();
   }
 
+  public boolean isReducedEffectiveness() {
+    return this == noEffect || rank < 0;
+  }
+
 }

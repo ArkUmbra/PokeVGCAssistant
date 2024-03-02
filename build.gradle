@@ -10,7 +10,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.neo4j:neo4j-jdbc-driver:4.0.9'
+//    implementation 'org.neo4j:neo4j-jdbc-driver:4.0.9'
+    implementation 'org.neo4j.driver:neo4j-java-driver:5.17.0'
+    implementation project(":DataScraper")
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }

@@ -17,4 +17,12 @@ public class Name {
         "japaneseName='" + japanese + '\'' +
         '}';
   }
+
+  public String getEnglishName() {
+    return englishName;
+  }
+
+  public String getJapanese() {
+    return japanese;
+  }
 }

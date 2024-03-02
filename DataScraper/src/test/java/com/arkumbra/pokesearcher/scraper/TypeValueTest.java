@@ -2,10 +2,7 @@ package com.arkumbra.pokesearcher.scraper;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,6 +88,13 @@ public class TypeValueTest {
           items.getValue().stream().map(comp ->
               comp.getCompositeTypes().toString()).collect(Collectors.joining(System.lineSeparator() + "  ")));
     }
+  }
+
+  @Test
+  public void testFindCombinationThatResistsAttackTypes() {
+    List<Pair<TypeValue, TypeValue>> typesWhichResist = new OptimalTypeSearcher().findTypesWhichResist(TypeValue.grass, TypeValue.poison, TypeValue.ground);
+
+    System.out.println(typesWhichResist);
   }
 
 }

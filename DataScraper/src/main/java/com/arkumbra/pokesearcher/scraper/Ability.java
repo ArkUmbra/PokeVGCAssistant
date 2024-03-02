@@ -39,4 +39,14 @@ public class Ability {
   public void setMetaData(Set<AbilityMetaData> metaData) {
     this.metaData = metaData;
   }
+
+  @Override
+  public String toString() {
+    return "Ability{" +
+        "idName='" + idName + '\'' +
+        ", name=" + name +
+        ", ingameDescription='" + ingameDescription + '\'' +
+        ", metaData=" + metaData +
+        '}';
+  }
 }
