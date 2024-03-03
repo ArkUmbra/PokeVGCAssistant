@@ -53,6 +53,17 @@ public class Neo4jClientTest {
   }
 
   @Test
+  public void testStoreAbilityWithMetaData() throws IOException, InterruptedException {
+    AbilityDexScraper abilityDexScraper = new AbilityDexScraper();
+    String abilityUrl = "https://www.serebii.net/abilitydex/quarkdrive.shtml";
+
+    Ability ability = abilityDexScraper.extractAbilityInfo(abilityUrl);
+    System.out.println(ability.getName().getEnglishName());
+
+    neo4jClient.storeAbility(ability);
+  }
+
+  @Test
   public void testGetNumberOfStoredAbilities() {
     int abilities = neo4jClient.getNumberOfAbilities();
     System.out.println(abilities);

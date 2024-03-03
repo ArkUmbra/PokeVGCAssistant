@@ -6,6 +6,9 @@ import com.arkumbra.pokesearcher.scraper.Name;
 import org.neo4j.driver.*;
 import org.neo4j.driver.exceptions.ClientException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jClient implements AutoCloseable {
@@ -23,67 +26,62 @@ public class Neo4jClient implements AutoCloseable {
 
   public void storeAbility(Ability ability) {
     try (var session = driver.session()) {
-//      var abilityName = session.executeWrite(tx -> {
-//        var query = new Query(
-//            "CREATE (a:Name) SET a.english = $englishName, a.japanese = $japaneseName RETURN a.englishName, a.japanese",
-//            toParameters(ability.getName()));
-//        tx.run(query);
-//      });
 
-      var greeting = session.executeWrite(tx -> {
-//        var query = new Query(
-//            "CREATE (n:Name) SET n.english = $english, n.japanese = $japanese",
-//            toParameters(ability.getName()));
-//        tx.run(query);
-//
-//        query = new Query(
-//            "CREATE (a:Ability) SET a.idString = $abilityId, a.description = $description RETURN a.idString",
-//            parameters("abilityId", ability.getIdName(), "description", ability.getIngameDescription()));
-//        var result = tx.run(query);
-//        String returnVal = result.single().get(0).asString();
-//
-//        query = new Query(
-//            "CREATE (a)-[:NAMED]->(n)",
-//            toParameters(ability.getName()));
-//        tx.run(query);
+      String createAbilityLinkName =
+          "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
+          "MERGE (a:Ability {idString: $abilityId, description: $description}) \n" +
+          "MERGE (a)-[:NAMED]->(n)";
+      var createAbilityLinkNameParams = parameters(
+          "english", ability.getName().getEnglishName(),
+          "japanese", ability.getName().getJapanese(),
+          "abilityId", ability.getIdName(),
+          "description", ability.getIngameDescription()
+      );
 
-//        var query = new Query(
-//            (
-//                "CREATE (n:Name) SET n.english = $english, n.japanese = $japanese \n" +
-//                    "CREATE ({{abilityKey}}:Ability) SET {{abilityKey}}.idString = $abilityId, {{abilityKey}}.description = $description \n" +
-//                    "CREATE ({{abilityKey}})-[:NAMED]->(n) RETURN {{abilityKey}}.idString;"
-//            ).replace("{{abilityKey}}", ability.getIdName()),
-//            parameters(
-//                "english", ability.getName().getEnglishName(),
-//                "japanese", ability.getName().getJapanese(),
-//                "abilityId", ability.getIdName(),
-//                "description", ability.getIngameDescription())
-//        );
+
+      if (ability.getMetaData().isEmpty()) {
+        executeQuery(session, createAbilityLinkName, createAbilityLinkNameParams);
+        return;
+      }
+
+      // Find existing metadata node and link ability to that
+      String linkAbilityToMetaData =
+          "UNWIND $metadataList AS metadata\n" +
+              "MATCH (a:Ability {idString: $abilityId}) \n" +
+              "MATCH (m:AbilityMetaData {label: metadata}) \n" +
+              "CREATE (a)-[:WITH_BEHAVIOUR]->(m)";
+      var linkAbilityToMetaDataParams = parameters(
+          "abilityId", ability.getIdName(),
+          "metadataList", ability.getMetaData().stream().map(a -> a.name()).toList()
+      );
+
+
+      executeQuery(session,
+          createAbilityLinkName, createAbilityLinkNameParams,
+          linkAbilityToMetaData, linkAbilityToMetaDataParams);
+      return;
+    }
+  }
+
+  private void executeQuery(Session session, Object... queryStringAndParameterPairs) {
+    if (queryStringAndParameterPairs.length % 2 != 0)
+      throw new IllegalArgumentException("Must have proper pairings of query string and params");
+
+    session.executeWrite(tx -> {
+      for (int i = 0; i < queryStringAndParameterPairs.length; i += 2) {
+        String queryString = (String)queryStringAndParameterPairs[i];
+        Value parameters = (Value)queryStringAndParameterPairs[i + 1];
 
         try {
-          var query = new Query(
-//                "MATCH (meta:AbilityMetaData) WHERE meta.label IN $metaLabel \n" +
-//                "MATCH (meta:AbilityMetaData {label: $metaLabel}) \n" +
-              "CREATE (n:Name {english:$english, japanese:$japanese}) \n" +
-                  "CREATE (a:Ability {idString: $abilityId, description: $description}) \n" +
-                  "CREATE (a)-[:NAMED]->(n) \n",//+
-//                "CREATE (a)-[:WITH_BEHAVIOUR]->(meta)",
-              parameters(
-                  "english", ability.getName().getEnglishName(),
-                  "japanese", ability.getName().getJapanese(),
-                  "abilityId", ability.getIdName(),
-                  "description", ability.getIngameDescription()
-//                  "metaLabel", ability.getMetaData().stream().map(a -> ability.getName()).toList()
-              )
-          );
+          var query = new Query(queryString, parameters);
           tx.run(query);
         } catch (ClientException e) {
-          System.out.println(ability.toString());
+          System.err.println("Failed to execute the following query " + queryString + ", " + parameters);
           throw e;
         }
-        return null;
-      });
-    }
+      }
+      return null;
+    });
   }
 
   private Value toParameters(Name name) {
