@@ -12,6 +12,7 @@ public class Move {
   private int pp;
   private int power;
   private int accuracy;
+  private String ingameDescription;
   private BigDecimal critRatio;
   private Priority priority;
   private EffectChance effectChance;
@@ -114,4 +115,11 @@ public class Move {
     this.attackMetaData = attackMetaData;
   }
 
+  public String getIngameDescription() {
+    return ingameDescription;
+  }
+
+  public void setIngameDescription(String ingameDescription) {
+    this.ingameDescription = ingameDescription;
+  }
 }

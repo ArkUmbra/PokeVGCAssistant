@@ -1,13 +1,12 @@
 package com.arkumbra.pokesearcher.neo4j;
 
-import com.arkumbra.pokesearcher.scraper.Ability;
-import com.arkumbra.pokesearcher.scraper.AbilityMetaData;
-import com.arkumbra.pokesearcher.scraper.Name;
+import com.arkumbra.pokesearcher.scraper.*;
 import org.neo4j.driver.*;
 import org.neo4j.driver.exceptions.ClientException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -24,6 +23,59 @@ public class Neo4jClient implements AutoCloseable {
     driver.close();
   }
 
+  public void storeMove(Move move) {
+    try (var session = driver.session()) {
+      String createMoveDetails =
+          "MATCH (tv:TypeValue {label:$typeValue}) \n" +
+          "MATCH (ac:AttackCategory {label:$attackCategory}) \n" +
+          "MATCH (pr:Priority {label:$priority}) \n" +
+          "MATCH (mt:MoveTarget {label:$moveTarget}) \n" +
+          "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
+          "MERGE (m:Move {id:$moveId, description:$description, pp:$pp, power:$power, critRatio:$critRatio, effectChance:$effectChance}) \n" +
+          "MERGE (m)-[:NAMED]->(n) \n" +
+          "MERGE (m)-[:TARGETS]->(mt) \n" +
+          "MERGE (m)-[:WITH_PRIORITY]->(pr) \n" +
+          "MERGE (m)-[:OF_CATEGORY]->(ac) \n" +
+          "MERGE (m)-[:OF_TYPE]->(tv) \n";
+      var createMoveDetailsParams = parameters(
+          "typeValue", move.getType().name(),
+          "attackCategory", move.getCategory().name(),
+          "priority", move.getPriority().name(),
+          "moveTarget", move.getMoveTarget().name(),
+          "english", move.getName().getEnglishName(),
+          "japanese", nullToBlank(move.getName().getJapanese()),
+          "moveId", nullToBlank(move.getIdName()),
+          "pp", move.getPp(),
+          "power", move.getPower(),
+          "critRatio", move.getCritRatio().toString(),
+          "effectChance", move.getEffectChance().getChance(),
+          "description", move.getIngameDescription()
+      );
+
+      if (move.getAttackMetaData().isEmpty()) {
+        executeQuery(session, createMoveDetails, createMoveDetailsParams);
+        return;
+      }
+
+      // Find existing metadata node and link ability to that
+      String linkMoveToMetaData =
+          "UNWIND $metadataList AS metadata\n" +
+              "MATCH (a:Move {id: $moveId}) \n" +
+              "MATCH (m:AttackMetaData {label: metadata}) \n" +
+              "CREATE (a)-[:WITH_BEHAVIOUR]->(m)";
+      var linkMoveToMetaDataParams = parameters(
+          "moveId", move.getIdName(),
+          "metadataList", move.getAttackMetaData().stream().map(Enum::name).toList()
+      );
+
+
+      executeQuery(session,
+          createMoveDetails, createMoveDetailsParams,
+          linkMoveToMetaData, linkMoveToMetaDataParams);
+
+    }
+  }
+
   public void storeAbility(Ability ability) {
     try (var session = driver.session()) {
 
@@ -33,7 +85,7 @@ public class Neo4jClient implements AutoCloseable {
           "MERGE (a)-[:NAMED]->(n)";
       var createAbilityLinkNameParams = parameters(
           "english", ability.getName().getEnglishName(),
-          "japanese", ability.getName().getJapanese(),
+          "japanese", nullToBlank(ability.getName().getJapanese()),
           "abilityId", ability.getIdName(),
           "description", ability.getIngameDescription()
       );
@@ -59,8 +111,33 @@ public class Neo4jClient implements AutoCloseable {
       executeQuery(session,
           createAbilityLinkName, createAbilityLinkNameParams,
           linkAbilityToMetaData, linkAbilityToMetaDataParams);
-      return;
     }
+  }
+
+  public void writeJapaneseName(Map<String, String> englishNameToJapaneseName) {
+    try (var session = driver.session()) {
+
+      Object[] queryAndParams = new Object[englishNameToJapaneseName.size() * 2];
+
+      int i = 0;
+      for (Map.Entry<String, String> englishJapaneseEntry : englishNameToJapaneseName.entrySet()) {
+        queryAndParams[i] =
+            "MATCH (a:Name {english: $english}) \n" +
+            "SET a.japanese = $japanese";
+
+        queryAndParams[i + 1] = parameters(
+            "english", englishJapaneseEntry.getKey(),
+            "japanese", englishJapaneseEntry.getValue()
+        );
+        i += 2;
+      }
+
+      executeQuery(session, queryAndParams);
+    }
+  }
+
+  private String nullToBlank(String value) {
+    return value == null ? "" : value;
   }
 
   private void executeQuery(Session session, Object... queryStringAndParameterPairs) {
@@ -91,17 +168,6 @@ public class Neo4jClient implements AutoCloseable {
     );
   }
 
-  public void printGreeting(final String message) {
-    try (var session = driver.session()) {
-      var greeting = session.executeWrite(tx -> {
-        var query = new Query("CREATE (a:Greeting) SET a.message = $message RETURN a.message + ', from node ' + id(a)", parameters("message", message));
-        var result = tx.run(query);
-        return result.single().get(0).asString();
-      });
-      System.out.println(greeting);
-    }
-  }
-
   public int getNumberOfAbilities() {
     try (var session = driver.session()) {
       var allAbilities = session.executeWrite(tx -> {
@@ -113,12 +179,21 @@ public class Neo4jClient implements AutoCloseable {
     }
   }
 
-  public void initializeAbilityMetadata() {
+  public void initializeConstantEnumDataToDatabase() {
+    storeSimpleEnum(AbilityMetaData.values(), "AbilityMetaData");
+    storeSimpleEnum(TypeValue.values(), "TypeValue");
+    storeSimpleEnum(AttackCategory.values(), "AttackCategory");
+    storeSimpleEnum(Priority.values(), "Priority");
+    storeSimpleEnum(MoveTarget.values(), "MoveTarget");
+    storeSimpleEnum(AttackMetaData.values(), "AttackMetaData");
+  }
+
+  private void storeSimpleEnum(Enum<?>[] values, String graphObjectName) {
     try (var session = driver.session()) {
-      for (AbilityMetaData abilityMetaData : AbilityMetaData.values()) {
+      for (Enum<?> value : values) {
         session.executeWrite(tx -> {
-          var query = new Query("MERGE (a:AbilityMetaData{label:$label})",
-              parameters("label", abilityMetaData.name()));
+          var query = new Query("MERGE (v:" + graphObjectName + "{label:$label})",
+              parameters("label", value.name()));
           tx.run(query);
           return null;
         });

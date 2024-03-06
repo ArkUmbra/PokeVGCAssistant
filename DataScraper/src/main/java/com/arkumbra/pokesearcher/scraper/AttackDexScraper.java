@@ -18,12 +18,15 @@ public class AttackDexScraper {
   private static final String NOT_PRESENT_IN_DEX = "-";
 
   public Set<String> getAllAttackDexUrls() throws IOException {
-    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAttackDex);
+    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAttackDex, "attackdex");
   }
 
   public Move extractMoveInfo(String url) throws IOException {
     Move move = new Move();
     Document doc = getPageWithDelay(url);
+
+    String idName = url.replaceAll(Constants.serebiiAttackDex, "").split(".shtml")[0];
+    move.setIdName(idName);
 
     // ------- First data row -----------
     // 0 - Name
@@ -62,7 +65,10 @@ public class AttackDexScraper {
     // ------- Third data row -----------
     // 0 - Battle Effect
     Elements tdsThirdDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Battle Effect");
-    boolean unusableLegacyMove = tdsThirdDataRow.get(0).text().startsWith("This move can't be used.");
+    String ingameDescription = tdsThirdDataRow.get(0).text();
+    boolean unusableLegacyMove = ingameDescription.startsWith("This move can't be used.");
+    move.setIngameDescription(ingameDescription);
+
 
     // ------- Fourth data row -----------
     // 0 - Secondary Effect
@@ -101,7 +107,7 @@ public class AttackDexScraper {
     Set<AttackMetaData> metaData = new HashSet<>();
     move.setAttackMetaData(metaData);
 
-    Elements tdsSixthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Physical Contact");
+    Elements tdsSixthDataRow = selectDataRowTdsByPartOfTrHeading(doc, "Sound-Type - Details");
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(0).text())) metaData.add(AttackMetaData.contact);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(1).text())) metaData.add(AttackMetaData.sound);
     if (SerebiiTextParser.yesOrNo(tdsSixthDataRow.get(2).text())) metaData.add(AttackMetaData.punching);
@@ -122,6 +128,8 @@ public class AttackDexScraper {
     if (SerebiiTextParser.yesOrNo(tdsEighthDataRow.get(3).text())) metaData.add(AttackMetaData.blockedByProtect);
     if (SerebiiTextParser.yesOrNo(tdsEighthDataRow.get(4).text())) metaData.add(AttackMetaData.mirrorMoveCopyable);
 
+    if (unusableLegacyMove) metaData.add(AttackMetaData.unusableShouldBeForgotten);
+
     return move;
   }
 
@@ -139,7 +147,30 @@ public class AttackDexScraper {
 
   private MoveTarget parseMoveTarget(String input) {
     switch (input) {
-      case "Selected Target": return MoveTarget.SingleSelected;
+      case "Selected Target":
+      case "Target and Self":
+      case "Adjacent target":
+      case "Adjacent Pokémon":
+      case "Opponent": return MoveTarget.SingleSelected;
+      case "Self": return MoveTarget.Self;
+      case "Team": return MoveTarget.Team;
+      case "Adjacent Ally":
+      case "Ally": return MoveTarget.Ally;
+      case "Field": return MoveTarget.Field;
+      case "All Adjacent Opponents":
+      case "All opponents":
+      case "All Adjacent Foes": return MoveTarget.BothOpponents;
+      case "All Adjacent Pokémon": return MoveTarget.BothOpponentsAndAlly;
+      case "Random Target": return MoveTarget.Random;
+      case "All": return MoveTarget.All;
+      case "Allies":
+      case "All allies": return MoveTarget.BothAllies;
+      case "Self or Ally": return MoveTarget.SelfOrALly;
+      case "Previous opponent": return MoveTarget.PreviousOpponent;
+      case "Opponent's Side":
+      case "Enemy side":
+      case "Enemy Side": return MoveTarget.OpponentsSideOfField;
+      case "Special": return MoveTarget.Unspecified;
       default: throw new RuntimeException("Move Target type parse not implemented [" + input + "]");
     }
   }
@@ -165,7 +196,7 @@ public class AttackDexScraper {
 
   private Document getPageWithDelay(String url) {
     try {
-      Thread.sleep(100);
+      Thread.sleep(50);
     } catch (InterruptedException e) {
       e.printStackTrace(); // TODO logger
     }

@@ -22,7 +22,7 @@ public class AbilityDexScraperGen9Test {
   @Test
   public void testGetAllAbilityDexLinks() throws IOException {
     Set<String> urls = scraper.getAllAbilityDexUrls();
-    System.out.println(urls);
+    System.out.println(String.join(System.lineSeparator(), urls.stream().sorted().toList()));
 
     assertTrue(urls.contains("https://www.serebii.net/abilitydex/adaptability.shtml"));
     assertTrue(urls.contains("https://www.serebii.net/abilitydex/longreach.shtml"));
@@ -31,7 +31,7 @@ public class AbilityDexScraperGen9Test {
   }
 
   @Test
-  public void testExtractVariousMoves() throws IOException {
+  public void testExtractVariousAbilities() throws IOException {
     Ability zeroToHero = scraper.extractAbilityInfo("https://www.serebii.net/abilitydex/zerotohero.shtml");
     System.out.println(zeroToHero.getName());
 
@@ -66,6 +66,25 @@ public class AbilityDexScraperGen9Test {
     assertFalse(anticipation.getMetaData().contains(AbilityMetaData.blocksReceiveAndPowerOfAlchemy));
     assertFalse(anticipation.getMetaData().contains(AbilityMetaData.blocksEntrainment));
     assertFalse(anticipation.getMetaData().contains(AbilityMetaData.blocksTrace));
+
+
+    Ability deltaStream = scraper.extractAbilityInfo("https://www.serebii.net/abilitydex/deltastream.shtml");
+    System.out.println(deltaStream.getName());
+
+    assertEquals("Delta Stream", deltaStream.getName().getEnglishName());
+    // No Japanese name listed on Serebii for whatever reason
+    assertEquals(null, deltaStream.getName().getJapanese());
+    assertEquals("The Pokémon changes the weather to eliminate all of the Flying type's weaknesses.", deltaStream.getIngameDescription());
+
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksRolePlayAndDoodle));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksReceiveAndPowerOfAlchemy));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksEntrainment));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksTrace));
+
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksRolePlayAndDoodle));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksReceiveAndPowerOfAlchemy));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksEntrainment));
+    assertFalse(deltaStream.getMetaData().contains(AbilityMetaData.blocksTrace));
   }
 
 }

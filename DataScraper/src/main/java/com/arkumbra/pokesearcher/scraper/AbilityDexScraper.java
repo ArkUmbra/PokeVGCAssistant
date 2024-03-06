@@ -16,7 +16,7 @@ import static com.arkumbra.pokesearcher.scraper.Util.selectDataRowTdsByPartOfTrH
 public class AbilityDexScraper {
 
   public Set<String> getAllAbilityDexUrls() throws IOException {
-    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAbilityDex);
+    return Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiAbilityDex, "abilitydex");
   }
 
   public Ability extractAbilityInfo(String url) throws IOException {
@@ -40,7 +40,13 @@ public class AbilityDexScraper {
     // This text box is always formatted as -> English name <br> Japanese name
     // This is the case even when there is no actual text provided for English name. Therefore, we just split on the br,
     // and take the last option
-    name.japanese = Parser.unescapeEntities(tdsFirstDataRow.get(1).html().split("<br>")[1].trim(), true);
+    try {
+      name.japanese = Parser.unescapeEntities(tdsFirstDataRow.get(1).html().split("<br>")[1].trim(), true);
+    } catch (Exception e) {
+      System.err.println("No Japanese name found for ability!! " + url);
+      e.printStackTrace();
+    }
+
     ability.setName(name);
 
 

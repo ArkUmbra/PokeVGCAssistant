@@ -268,7 +268,8 @@ public class PokedexScraper {
         .replace("(Hidden Ability)", "")
         .replace("(Hidden)", "")
         .replace("Abilities:", "")
-        .trim().split("-")
+        // NOTE!! Avoid abilities with hyphen in the name, but also split correctly on the hyphen because abilities. Sometimes they are separated by " - ", and sometimes it is "- "...
+        .trim().split("- ")
     ).map(humanReadableAbility -> {
       return humanReadableAbility
           .trim()

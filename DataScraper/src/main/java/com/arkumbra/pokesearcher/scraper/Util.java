@@ -13,7 +13,7 @@ public class Util {
 
   public static Document getPageWithDelay(String url) {
     try {
-      Thread.sleep(100);
+      Thread.sleep(50);
     } catch (InterruptedException e) {
       e.printStackTrace(); // TODO logger
     }
@@ -26,6 +26,10 @@ public class Util {
   }
 
   public static Set<String> getUrlsForAllSelectURLObjectsOnPage(String serebiiPageLink) throws IOException {
+    return getUrlsForAllSelectURLObjectsOnPage(serebiiPageLink, null);
+  }
+
+  public static Set<String> getUrlsForAllSelectURLObjectsOnPage(String serebiiPageLink, String forLinksWithText) throws IOException {
     // Some pages have duplicate values, so just using a set to simplify things
     Set<String> urls = new HashSet<>();
 
@@ -36,9 +40,11 @@ public class Util {
 
     for (Element element : pokedexSelectBoxes) {
       String shortUrl = element.attr("value");
-      if (shortUrl != null && !shortUrl.equals("#")) {
-        String combinedUrl = Constants.serebiiHomePage + shortUrl;
-        urls.add(combinedUrl);
+      if (forLinksWithText == null || shortUrl.contains(forLinksWithText)) {
+        if (!shortUrl.equals("#")) {
+          String combinedUrl = Constants.serebiiHomePage + shortUrl;
+          urls.add(combinedUrl);
+        }
       }
     }
 

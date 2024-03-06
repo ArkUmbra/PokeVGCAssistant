@@ -329,7 +329,6 @@ public class PokedexNumberScraperGen9Test {
   public void testSplitMultiFormAbilityStrings() {
     // Weezing
     String abilitiesRaw = "Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)";
-//    List<String> formNames = List.of("Normal", "Galarian Form");
 
     List<String> expected = List.of(
         "Levitate - Neutralizing Gas - Stench (Hidden)",
@@ -351,6 +350,31 @@ public class PokedexNumberScraperGen9Test {
 
     result = scraper.splitUpAbilitiesHeaderStringForMultiFormPokemon(abilitiesRaw);
     assertEquals(expected, result);
+  }
+
+  @Test
+  public void testAbilityIdMatchesIdStringInAbilityDex() throws IOException {
+    // There's a hyphen in the ability name for Well-Baked Body, so test to make sure an sanitization we are doing
+    // is the same across Pokemon and Ability scrapers
+    // This can be problematic because we are splitting strings based on hyphen at the time of writing
+
+    Pokemon dachsbun = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/dachsbun/");
+    System.out.println(dachsbun.getDetails().getAbilities());
+
+    Ability wellBakedBody = new AbilityDexScraper().extractAbilityInfo("https://www.serebii.net/abilitydex/well-bakedbody.shtml");
+    System.out.println(wellBakedBody);
+
+    assertEquals(wellBakedBody.getIdName(), dachsbun.getDetails().getAbilities().getStandardAbilityNameIds().get(0));
+
+
+    // Test ability with hyphen
+    Pokemon ursaluna = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/ursaluna/");
+    System.out.println(ursaluna.getDetails().getAbilities());
+
+    Ability mindsEye = new AbilityDexScraper().extractAbilityInfo("https://www.serebii.net/abilitydex/mind'seye.shtml");
+    System.out.println(mindsEye);
+
+    assertEquals(mindsEye.getIdName(), ursaluna.getAlternateForms().get(0).getAbilities().getStandardAbilityNameIds().get(0));
   }
 
   private <A> LinkedHashSet<A> linkedHashSet(A... objects) {
