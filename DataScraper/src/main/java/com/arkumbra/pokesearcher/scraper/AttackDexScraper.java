@@ -26,7 +26,7 @@ public class AttackDexScraper {
     Document doc = getPageWithDelay(url);
 
     String idName = url.replaceAll(Constants.serebiiAttackDex, "").split(".shtml")[0];
-    move.setIdName(idName);
+    move.setIdName(idName.replace("/", ""));
 
     // ------- First data row -----------
     // 0 - Name

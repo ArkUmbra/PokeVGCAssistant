@@ -45,7 +45,7 @@ public class PokemonDetails {
   }
 
   public String getFormName() {
-    return formName;
+    return formName == null ? "Default" : formName;
   }
 
   public void setFormName(String formName) {

@@ -37,9 +37,13 @@ public class MoveAcquire {
   @Override
   public String toString() {
     if (acquireType == MoveAcquireType.Level) {
-      return "" + numberValue;
+      return
+          ("0".repeat(3 - String.valueOf(numberValue).length()))
+          + numberValue;
     } else if (acquireType == MoveAcquireType.TM) {
-      return "TM" + numberValue;
+      return "TM" +
+          ("0".repeat(3 - String.valueOf(numberValue).length()))
+          + numberValue;
     } else {
       return acquireType.toString();
     }

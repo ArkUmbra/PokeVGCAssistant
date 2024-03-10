@@ -33,10 +33,10 @@ public class PokedexNumberScraperGen9Test {
     assertNames(new Name("Tinkaton"), tinkaton.getName());
     assertPokedex(
         mapOfNullable(
-            "Paldea", 281,
-            "National", 959,
-            "Blueberry", null,
-            "Kitakami", null
+            PokedexRegion.Paldea, 281,
+            PokedexRegion.National, 959,
+            PokedexRegion.Blueberry, null,
+            PokedexRegion.Kitakami, null
         ), tinkaton.getPokedexNumber());
     assertEquals(new Abilities(List.of("moldbreaker", "owntempo"), "pickpocket"),
         tinkaton.getDetails().getAbilities());
@@ -51,10 +51,10 @@ public class PokedexNumberScraperGen9Test {
     assertNames(new Name("Rillaboom"), rillaboom.getName());
     assertPokedex(
         mapOfNullable(
-            "Paldea", null,
-            "National", 812,
-            "Blueberry", 229,
-            "Kitakami", null
+            PokedexRegion.Paldea, null,
+            PokedexRegion.National, 812,
+            PokedexRegion.Blueberry, 229,
+            PokedexRegion.Kitakami, null
         ), rillaboom.getPokedexNumber());
     assertEquals(new Abilities(List.of("overgrow"), "grassysurge"),
         rillaboom.getDetails().getAbilities());
@@ -68,10 +68,10 @@ public class PokedexNumberScraperGen9Test {
     assertNames(new Name("Ho-Oh"), hooh.getName());
     assertPokedex(
         mapOfNullable(
-            "Paldea", null,
-            "National", 250,
-            "Blueberry", null,
-            "Kitakami", null
+            PokedexRegion.Paldea, null,
+            PokedexRegion.National, 250,
+            PokedexRegion.Blueberry, null,
+            PokedexRegion.Kitakami, null
         ), hooh.getPokedexNumber());
     assertFalse(hooh.hasAlternateForms());
     assertEquals(new Abilities(List.of("pressure"), "regenerator"),
@@ -91,10 +91,10 @@ public class PokedexNumberScraperGen9Test {
     assertNames(new Name("Weezing"), weezing.getName());
     assertPokedex(
         mapOfNullable(
-            "Paldea", null,
-            "National", 110,
-            "Blueberry", null,
-            "Kitakami", 136
+            PokedexRegion.Paldea, null,
+            PokedexRegion.National, 110,
+            PokedexRegion.Blueberry, null,
+            PokedexRegion.Kitakami, 136
         ), weezing.getPokedexNumber());
     assertTrue(weezing.hasAlternateForms());
     assertEquals(1, weezing.getAlternateForms().size());
@@ -381,11 +381,11 @@ public class PokedexNumberScraperGen9Test {
     return new LinkedHashSet<>(Arrays.asList(objects));
   }
 
-  private Map<String, Integer> mapOfNullable(Object... keyAndValues) {
-    Map<String, Integer> map = new HashMap<>();
+  private Map<PokedexRegion, Integer> mapOfNullable(Object... keyAndValues) {
+    Map<PokedexRegion, Integer> map = new HashMap<>();
 
     for (int i = 0; i < keyAndValues.length; i += 2) {
-      map.put((String)keyAndValues[i], (Integer)keyAndValues[i + 1]);
+      map.put((PokedexRegion)keyAndValues[i], (Integer)keyAndValues[i + 1]);
     }
 
     return map;
@@ -395,14 +395,14 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(expected.englishName, actual.englishName);
   }
 
-  private void assertPokedex(Map<String, Integer> expectedDex, PokedexNumber pokedexNumber) {
+  private void assertPokedex(Map<PokedexRegion, Integer> expectedDex, PokedexNumber pokedexNumber) {
     assertEquals(expectedDex.size(), pokedexNumber.dexNumbers.size(),
         "Pokedex dex entries size did not match. " + expectedDex + ", " + pokedexNumber);
 
-    assertEquals(expectedDex.get("National"), pokedexNumber.dexNumbers.get("National"), "National dex mismatch");
-    assertEquals(expectedDex.get("Blueberry"), pokedexNumber.dexNumbers.get("Blueberry"), "Blueberry dex mismatch");
-    assertEquals(expectedDex.get("Paldea"), pokedexNumber.dexNumbers.get("Paldea"), "Paldea dex mismatch");
-    assertEquals(expectedDex.get("Kitakami"), pokedexNumber.dexNumbers.get("Kitakami"), "Kitakami dex mismatch");
+    assertEquals(expectedDex.get(PokedexRegion.National), pokedexNumber.dexNumbers.get(PokedexRegion.National), "National dex mismatch");
+    assertEquals(expectedDex.get(PokedexRegion.Blueberry), pokedexNumber.dexNumbers.get(PokedexRegion.Blueberry), "Blueberry dex mismatch");
+    assertEquals(expectedDex.get(PokedexRegion.Paldea), pokedexNumber.dexNumbers.get(PokedexRegion.Paldea), "Paldea dex mismatch");
+    assertEquals(expectedDex.get(PokedexRegion.Kitakami), pokedexNumber.dexNumbers.get(PokedexRegion.Kitakami), "Kitakami dex mismatch");
   }
 
 }

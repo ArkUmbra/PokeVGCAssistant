@@ -42,7 +42,11 @@ public class PokedexScraper {
   public Pokemon extractPokemonInfo(String url) throws IOException {
     Document doc = getPageWithDelay(url);
 
-    return isMultiFormPokemon(doc) ? extractPokemonInfoMultiForm(doc) : extractPokemonInfoSingleForm(doc);
+    String idName = url.replaceAll(Constants.serebiiPokedexScarletViolet, "").split(".shtml")[0].replace("/", "");
+    Pokemon pokemon = new Pokemon();
+    pokemon.setIdName(idName);
+
+    return isMultiFormPokemon(doc) ? extractPokemonInfoMultiForm(doc, pokemon) : extractPokemonInfoSingleForm(doc, pokemon);
   }
 
   private boolean isMultiFormPokemon(Document doc) {
@@ -50,7 +54,7 @@ public class PokedexScraper {
     return !elements.isEmpty();
   }
 
-  private Pokemon extractPokemonInfoSingleForm(Document doc) {
+  private Pokemon extractPokemonInfoSingleForm(Document doc, Pokemon pokemon) {
     // TDs
     // 0 - Name
     // 1 - Other Names
@@ -59,7 +63,6 @@ public class PokedexScraper {
     // 4 - Type
     Elements dexTableNameNumberDataTds = Util.selectDataRowTdsByPartOfTrHeading(doc, "Other names");
 
-    Pokemon pokemon = new Pokemon();
     PokemonDetails details = new PokemonDetails();
 
     // Name
@@ -69,7 +72,7 @@ public class PokedexScraper {
     pokemon.setName(name);
 
     // Pokedex number
-    Map<String, Integer> dexToNumber = extractDexInfo(
+    Map<PokedexRegion, Integer> dexToNumber = extractDexInfo(
         dexTableNameNumberDataTds.get(2)
             .select("table > tbody > tr > td")
     );
@@ -85,11 +88,6 @@ public class PokedexScraper {
     // Abilities
     Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
     details.setAbilities(parseAbilitiesFromTextString(abilityHeaderBlockTd.text()));
-//
-//    Element abilityBlockTd = doc.select("tr:contains(Abilities:)").first() // skip header, go to data
-//        .nextElementSibling()
-//        .selectFirst("td");
-//    details.setAbilities(parseAbilitiesForSinglePokemon(abilityBlockTd));
 
     // Moveset
     details.setMoveset(extractMoveset(doc));
@@ -103,24 +101,17 @@ public class PokedexScraper {
     return pokemon;
   }
 
-  private void populateName(Elements dexTableNameNumberDataTds, Pokemon pokemon) {
-
-  }
-
-  private Pokemon extractPokemonInfoMultiForm(Document doc) {
+  private Pokemon extractPokemonInfoMultiForm(Document doc, Pokemon pokemon) {
     Elements formImages = doc.select("table.dextable:contains(Alternate Forms)").select("img");
     List<String> pokemonFormNames = formImages.stream()
         // Note: Sometimes the spelling form or forme is used, so this should handle both
         // alt value should be something like: "Kantonian Form", "Incarnate Forme", etc
-//        .map(formImg -> formImg.attr("alt").split(" Form")[0])
         .map(formImg -> formImg.attr("alt"))
         .toList();
 
     // First form can also be considered 'Normal', so we can use that when searching for matching data
-
     Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
     List<String> abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
-
 
     // TDs
     // 0 - Name
@@ -167,7 +158,6 @@ public class PokedexScraper {
       forms.add(pokemonDetails);
     }
 
-    Pokemon pokemon = new Pokemon();
     PokemonDetails details = new PokemonDetails();
 
     // Name
@@ -177,7 +167,7 @@ public class PokedexScraper {
     pokemon.setName(name);
 
     // Pokedex number
-    Map<String, Integer> dexToNumber = extractDexInfo(
+    Map<PokedexRegion, Integer> dexToNumber = extractDexInfo(
         dexTableNameNumberDataTds.get(2)
             .select("table > tbody > tr > td")
     );
@@ -195,8 +185,6 @@ public class PokedexScraper {
     // Example abilities header text for multi form Pokemon before process
     // Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)
     // Abilities: Defiant (Teal Mask) - Water Absorb (Wellspring Mask) - Mold Breaker (Hearthflame Mask) - Sturdy (Cornerstone Mask)
-
-    // TODO take account of form/forme spelling (sometimes it seems the difference is unintentional..)
 
     // Because matching the form names is unreliable due to seemingly random use of form vs forme, we will just detect
     // brackets and split there. Except in the case of '(Hidden)', which we need to include in the output
@@ -285,43 +273,18 @@ public class PokedexScraper {
     return new Abilities(abilityNameIds, hiddenAbilityNameId);
   }
 
-//  private Abilities parseAbilitiesForSinglePokemon(Element abilityBlockTd) {
-//    boolean hasHiddenAbility = abilityBlockTd.text().contains("Hidden Ability:");
-//
-//    LinkedList<String> abilityNameIds = new LinkedList<>();
-//    abilityBlockTd.select("a").forEach(aTag -> {
-//      String abilityShortLink = aTag.attribute("href").getValue(); // e.g. /abilitydex/owntempo.shtml
-//
-//      // Sometimes we may pick up some extraneous hrefs, so try to make sure these are only abilities
-//      // e.g. for Rillaboom https://www.serebii.net/pokedex-sv/rillaboom/, there is a link to '/games/terrain' as part
-//      //  of the explanation for grassy surge. Hopefully there are no actual ability dex links in the /explanation/
-//      // of a Pokemon's actual abilities otherwise they will get picked up here by mistake
-//      if (abilityShortLink.startsWith("/abilitydex/")) {
-//        abilityNameIds.add(abilityShortLink.replace("/abilitydex/", "").replace(".shtml", ""));
-//      }
-//
-//    });
-//
-//    String hiddenAbilityNameId = null;
-//    if (hasHiddenAbility) {
-//      hiddenAbilityNameId = abilityNameIds.removeLast();
-//    }
-//
-//    return new Abilities(abilityNameIds, hiddenAbilityNameId);
-//  }
-
-
-  private Map<String, Integer> extractDexInfo(Elements tds) {
-    Map<String, Integer> dexToNumber = new HashMap<>();
+  private Map<PokedexRegion, Integer> extractDexInfo(Elements tds) {
+    Map<PokedexRegion, Integer> dexToNumber = new HashMap<>();
 
     for (int i = 0; i < tds.size() - 1; i += 2) {
       String dex = tds.get(i).text().split(":")[0];
+      PokedexRegion region = PokedexRegion.valueOf(dex);
       String number = tds.get(i + 1).text().split("#")[1];
 
       if (number.startsWith(NOT_PRESENT_IN_DEX)) {
-        dexToNumber.put(dex, null);
+        dexToNumber.put(region, null);
       } else {
-        dexToNumber.put(dex, Integer.valueOf(number));
+        dexToNumber.put(region, Integer.valueOf(number));
       }
     }
 

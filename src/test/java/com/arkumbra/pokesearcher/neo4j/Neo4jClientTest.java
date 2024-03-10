@@ -1,9 +1,6 @@
 package com.arkumbra.pokesearcher.neo4j;
 
-import com.arkumbra.pokesearcher.scraper.Ability;
-import com.arkumbra.pokesearcher.scraper.AbilityDexScraper;
-import com.arkumbra.pokesearcher.scraper.AttackDexScraper;
-import com.arkumbra.pokesearcher.scraper.Move;
+import com.arkumbra.pokesearcher.scraper.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -127,6 +124,16 @@ public class Neo4jClientTest {
         e.printStackTrace();
       }
     }
+  }
+
+  @Test
+  public void testScrapeAndStoreAPokemon() throws IOException {
+    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/weezing/");
+//    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/deoxys/");
+//    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
+//    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
+
+    neo4jClient.storePokemon(pokemon);
   }
 
 }
