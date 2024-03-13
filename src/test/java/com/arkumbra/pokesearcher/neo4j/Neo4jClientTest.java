@@ -39,7 +39,7 @@ public class Neo4jClientTest {
     for (int i = 0; i < 20; i++) {
       String abilityUrl = iterator.next();
       Ability ability = abilityDexScraper.extractAbilityInfo(abilityUrl);
-      System.out.println(ability.getName().getEnglishName());
+      System.out.println(ability.getName().getEnglish());
       neo4jClient.storeAbility(ability);
     }
 
@@ -59,12 +59,15 @@ public class Neo4jClientTest {
     for (String abilityUrl : abilityUrls) {
       System.out.println(abilityUrl);
       Ability ability = abilityDexScraper.extractAbilityInfo(abilityUrl);
-      System.out.println("  " + ability.getName().getEnglishName());
+      System.out.println("  " + ability.getName().getEnglish());
       neo4jClient.storeAbility(ability);
     }
 
     int abilities = neo4jClient.getNumberOfAbilities();
     System.out.println("Scraped " + abilities + " abilities");
+
+    testUpdateNamesForAbilitiesWithMissingJapaneseNames();
+    System.out.println("Missing Japanese names have been added");
   }
 
   @Test
@@ -73,7 +76,7 @@ public class Neo4jClientTest {
     String abilityUrl = "https://www.serebii.net/abilitydex/quarkdrive.shtml";
 
     Ability ability = abilityDexScraper.extractAbilityInfo(abilityUrl);
-    System.out.println(ability.getName().getEnglishName());
+    System.out.println(ability.getName().getEnglish());
 
     neo4jClient.storeAbility(ability);
   }
@@ -99,12 +102,13 @@ public class Neo4jClientTest {
     );
 
     neo4jClient.writeJapaneseName(englishToJapaneseNames);
+    System.out.println(englishToJapaneseNames);
   }
 
   @Test
   public void testScrapeAndStoreSingleMove() throws IOException {
     AttackDexScraper attackDexScraper = new AttackDexScraper();
-    Move heatCrash = attackDexScraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/heatcrash.shtml");
+    Move heatCrash = attackDexScraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/junglehealing.shtml");
 
     neo4jClient.storeMove(heatCrash);
   }
@@ -128,12 +132,21 @@ public class Neo4jClientTest {
 
   @Test
   public void testScrapeAndStoreAPokemon() throws IOException {
-    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/weezing/");
+
+    PokedexScraper scraper = new PokedexScraper();
+
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/deoxys/");
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
 
-    neo4jClient.storePokemon(pokemon);
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hawlucha/"));
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/sceptile/"));
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hitmonlee/"));
+  }
+
+  @Test
+  public void testGetAbilities() {
+    neo4jClient.getAllAbilities();
   }
 
 }

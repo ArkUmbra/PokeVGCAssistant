@@ -33,7 +33,7 @@ public class AbilityDexScraper {
 
     // Name
     Name name = new Name();
-    name.englishName = tdsFirstDataRow.get(0).text().trim();
+    name.english = tdsFirstDataRow.get(0).text().trim();
 
     // NB: /sometimes/ the td with the Japanese ability name also contains an English translation, which is kind of
     // annoying. Therefore, we want code that handles both situations

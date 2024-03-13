@@ -37,7 +37,7 @@ public class AttackDexScraper {
     // Name
     String[] nameSplits = tdsFirstDataRow.get(0).html().split("<br>");
     Name name = new Name();
-    name.englishName = nameSplits[0];
+    name.english = nameSplits[0];
     name.japanese = Parser.unescapeEntities(nameSplits[1].split("<!--")[0].trim(), true);
     move.setName(name);
 
@@ -164,7 +164,8 @@ public class AttackDexScraper {
       case "Random Target": return MoveTarget.Random;
       case "All": return MoveTarget.All;
       case "Allies":
-      case "All allies": return MoveTarget.BothAllies;
+      case "All allies":
+      case "All Allies": return MoveTarget.BothAllies;
       case "Self or Ally": return MoveTarget.SelfOrALly;
       case "Previous opponent": return MoveTarget.PreviousOpponent;
       case "Opponent's Side":

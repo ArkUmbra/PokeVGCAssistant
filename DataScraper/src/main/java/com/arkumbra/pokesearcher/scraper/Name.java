@@ -1,25 +1,31 @@
 package com.arkumbra.pokesearcher.scraper;
 
 public class Name {
-  String englishName;
+  String english;
   String japanese;
 
   public Name() { }
 
-  public Name(String englishName) {
-    this.englishName = englishName;
+  public Name(String english) {
+    this.english = english;
   }
+
+  public Name(String english, String japanese) {
+    this.english = english;
+    this.japanese = japanese;
+  }
+
 
   @Override
   public String toString() {
     return "Name{" +
-        "englishName='" + englishName + '\'' + System.lineSeparator() +
+        "englishName='" + english + '\'' + System.lineSeparator() +
         "japaneseName='" + japanese + '\'' +
         '}';
   }
 
-  public String getEnglishName() {
-    return englishName;
+  public String getEnglish() {
+    return english;
   }
 
   public String getJapanese() {

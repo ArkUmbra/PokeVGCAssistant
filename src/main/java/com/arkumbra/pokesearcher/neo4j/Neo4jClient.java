@@ -1,10 +1,14 @@
 package com.arkumbra.pokesearcher.neo4j;
 
+import com.arkumbra.pokesearcher.rest.AbilityDetail;
+import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
 import org.neo4j.driver.*;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -28,7 +32,7 @@ public class Neo4jClient implements AutoCloseable {
           "MERGE (p:Pokemon {id:$idName}) \n" +
           "MERGE (p)-[:NAMED]->(n) \n";
       var createPokemonParams = parameters(
-          "english", pokemon.getName().getEnglishName(),
+          "english", pokemon.getName().getEnglish(),
           "japanese", nullToBlank(pokemon.getName().getJapanese()),
           "idName", pokemon.getIdName()
       );
@@ -73,15 +77,15 @@ public class Neo4jClient implements AutoCloseable {
         """
         MATCH (p:Pokemon {id:$idName})
         MERGE (pd:PokemonDetails {id:$qualifiedFormName, hp:$hp, atk:$atk, def:$def, spAtk:$spAtk, spDef:$spDef, spe:$spe})
-        MERGE (p)-[:WITH_FORM {formName: $formName}]->(pd)
+        MERGE (p)-[:WITH_FORM{formName:$formName}]->(pd)
         """;
     var createPokemonDetailParams = parameters(
         "idName", idName,
         "hp", pokemonDetails.getBaseStats().getHp(),
         "atk", pokemonDetails.getBaseStats().getAtk(),
         "def", pokemonDetails.getBaseStats().getDef(),
-        "spAtk", pokemonDetails.getBaseStats().getAtk(),
-        "spDef", pokemonDetails.getBaseStats().getSpecialAtk(),
+        "spAtk", pokemonDetails.getBaseStats().getSpecialAtk(),
+        "spDef", pokemonDetails.getBaseStats().getSpecialDef(),
         "spe", pokemonDetails.getBaseStats().getSpeed(),
         "formName", pokemonDetails.getFormName(),
         "qualifiedFormName", qualifiedFormName
@@ -105,7 +109,7 @@ public class Neo4jClient implements AutoCloseable {
         UNWIND $abilityList AS ability
           MATCH (a:Ability {idString: ability})
           MATCH (pd:PokemonDetails {id:$qualifiedFormName})
-          MERGE (pd)-[:WITH_ABILITY]->(a)
+          MERGE (pd)-[:WITH_ABILITY {category: 'regular'}]->(a)
         """;
 
     var linkToStandardAbilityParams = parameters(
@@ -124,7 +128,7 @@ public class Neo4jClient implements AutoCloseable {
           """
           MATCH (a:Ability {idString: $ability})
           MATCH (pd:PokemonDetails {id:$qualifiedFormName})
-          MERGE (pd)-[:WITH_HIDDEN_ABILITY]->(a)
+          MERGE (pd)-[:WITH_ABILITY {category: 'hidden'}]->(a)
           """;
 
       var linkToHiddenAbilityParams = parameters(
@@ -212,7 +216,7 @@ public class Neo4jClient implements AutoCloseable {
           "attackCategory", move.getCategory().name(),
           "priority", move.getPriority().name(),
           "moveTarget", move.getMoveTarget().name(),
-          "english", move.getName().getEnglishName(),
+          "english", move.getName().getEnglish(),
           "japanese", nullToBlank(move.getName().getJapanese()),
           "moveId", nullToBlank(move.getIdName()),
           "pp", move.getPp(),
@@ -233,7 +237,7 @@ public class Neo4jClient implements AutoCloseable {
           "UNWIND $metadataList AS metadata\n" +
               "MATCH (a:Move {id: $moveId}) \n" +
               "MATCH (m:AttackMetaData {label: metadata}) \n" +
-              "MERGE (a)-[:WITH_BEHAVIOUR]->(m)";
+              "MERGE (a)-[:WITH_ATTACK_BEHAVIOUR]->(m)";
       var linkMoveToMetaDataParams = parameters(
           "moveId", move.getIdName(),
           "metadataList", move.getAttackMetaData().stream().map(Enum::name).toList()
@@ -254,7 +258,7 @@ public class Neo4jClient implements AutoCloseable {
           "MERGE (a:Ability {idString: $abilityId, description: $description, summary: $description}) \n" +
           "MERGE (a)-[:NAMED]->(n)";
       var createAbilityLinkNameParams = parameters(
-          "english", ability.getName().getEnglishName(),
+          "english", ability.getName().getEnglish(),
           "japanese", nullToBlank(ability.getName().getJapanese()),
           "abilityId", ability.getIdName(),
           "description", ability.getIngameDescription()
@@ -271,7 +275,7 @@ public class Neo4jClient implements AutoCloseable {
           "UNWIND $metadataList AS metadata\n" +
               "MATCH (a:Ability {idString: $abilityId}) \n" +
               "MATCH (m:AbilityMetaData {label: metadata}) \n" +
-              "MERGE (a)-[:WITH_BEHAVIOUR]->(m)";
+              "MERGE (a)-[:WITH_ABILITY_BEHAVIOUR]->(m)";
       var linkAbilityToMetaDataParams = parameters(
           "abilityId", ability.getIdName(),
           "metadataList", ability.getMetaData().stream().map(a -> a.name()).toList()
@@ -335,13 +339,6 @@ public class Neo4jClient implements AutoCloseable {
     });
   }
 
-  private Value toParameters(Name name) {
-    return parameters(
-        "english", name.getEnglishName(),
-        "japanese", name.getJapanese()
-    );
-  }
-
   public int getNumberOfAbilities() {
     try (var session = driver.session()) {
       var allAbilities = session.executeWrite(tx -> {
@@ -350,6 +347,122 @@ public class Neo4jClient implements AutoCloseable {
         return result.list();
       });
       return allAbilities.size();
+    }
+  }
+
+  public List<Ability> getAllAbilities() {
+    try (var session = driver.session()) {
+      List<Record> allAbilities = session.executeWrite(tx -> {
+        var query = new Query(
+            "MATCH (a:Ability) " +
+                "MATCH (a)-[:NAMED]->(n:Name) " +
+                "OPTIONAL MATCH (a)-[:WITH_ABILITY_BEHAVIOUR]->(m:AbilityMetaData) " +
+                "RETURN a.idString, n.english, n.japanese, a.description, collect(m.label)"
+        );
+        var result = tx.run(query);
+        return result.list();
+      });
+
+      List<Ability> abilities = allAbilities.stream().map(ability -> {
+        String idString = ability.values().get(0).asString();
+        String englishName = ability.values().get(1).asString();
+        String japaneseName = ability.values().get(2).asString();
+        String description = ability.values().get(3).asString();
+        List<AbilityMetaData> metaData = ability.values().get(4).asList(raw -> {
+          return AbilityMetaData.valueOf(raw.asString());
+        });
+        return new Ability(idString, new Name(englishName, japaneseName), description, new HashSet<>(metaData));
+      }).collect(Collectors.toList());
+
+      return abilities;
+    }
+  }
+
+  /*
+MATCH (a:Ability {idString: 'unburden'})
+MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
+MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+MATCH (pokemon)-[:NAMED]->(name:Name)
+MATCH (details)-[:OF_TYPE]->(type:TypeValue)
+RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form.formName, collect(type.label),
+       details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
+   */
+  public AbilityDetail getAbilityDetail(String abilityId) {
+    try (var session = driver.session()) {
+
+      return session.executeWrite(tx -> {
+        // Get ability
+        String abilityQuery =
+            """
+            MATCH (a:Ability {idString: $abilityId})
+            MATCH (a)-[]->(n:Name)
+            OPTIONAL MATCH (a)-[]->(m:AbilityMetaData)
+            RETURN a.idString, n.english, n.japanese, a.description, collect(m.label)
+            """;
+        var abilityParameters = parameters("abilityId", abilityId);
+
+        var abilityResult = tx.run(new Query(abilityQuery, abilityParameters)).single();
+        Ability ability = new Ability(
+            abilityResult.get(0).asString(),
+            new Name(
+                abilityResult.get(1).asString(),
+                abilityResult.get(2).asString()
+            ),
+            abilityResult.get(3).asString(),
+            new HashSet<>(abilityResult.get(4).asList(a -> AbilityMetaData.valueOf(a.asString())))
+        );
+
+
+        // Get Pokemon with this ability
+        var pokemonWithAbilityQuery = new Query(
+            """
+                MATCH (a:Ability {idString: $abilityId})
+                MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
+                MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+                MATCH (pokemon)-[:NAMED]->(name:Name)
+                MATCH (details)-[:OF_TYPE]->(type:TypeValue)
+                RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form.formName, collect(type.label),
+                       details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe, pokemon.id
+               """,
+            abilityParameters
+        );
+        Result matchingPokemon = tx.run(pokemonWithAbilityQuery);
+        List<PokemonSummary> pokemonWithRegularAbility = new ArrayList<>();
+        List<PokemonSummary> pokemonWithHiddenAbility = new ArrayList<>();
+        matchingPokemon.forEachRemaining(pokemonResult -> {
+          String qualifiedFormName = pokemonResult.get(0).asString();
+          boolean isHiddenAbility = pokemonResult.get(1).asString().equals("hidden");
+          Name name = new Name(
+              pokemonResult.get(2).asString(),
+              pokemonResult.get(3).asString()
+          );
+          String formName = pokemonResult.get(4).asString();
+          List<TypeValue> types = pokemonResult.get(5).asList(a -> TypeValue.valueOf(a.asString()));
+          BaseStats baseStats = new BaseStats(
+              pokemonResult.get(6).asInt(),
+              pokemonResult.get(7).asInt(),
+              pokemonResult.get(8).asInt(),
+              pokemonResult.get(9).asInt(),
+              pokemonResult.get(10).asInt(),
+              pokemonResult.get(11).asInt()
+          );
+
+          PokemonSummary pokemonSummary = new PokemonSummary(
+              pokemonResult.get(12).asString(),
+              name,
+              formName,
+              types,
+              baseStats
+          );
+
+          if (isHiddenAbility)
+            pokemonWithHiddenAbility.add(pokemonSummary);
+          else
+            pokemonWithRegularAbility.add(pokemonSummary);
+        });
+
+        return new AbilityDetail(ability, pokemonWithRegularAbility, pokemonWithHiddenAbility);
+      });
     }
   }
 

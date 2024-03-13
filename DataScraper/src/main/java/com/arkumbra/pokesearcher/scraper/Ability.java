@@ -8,6 +8,17 @@ public class Ability {
   private String ingameDescription;
   private Set<AbilityMetaData> metaData;
 
+  public Ability() {
+
+  }
+
+  public Ability(String idName, Name name, String ingameDescription, Set<AbilityMetaData> metaData) {
+    this.idName = idName;
+    this.name = name;
+    this.ingameDescription = ingameDescription;
+    this.metaData = metaData;
+  }
+
   public String getIdName() {
     return idName;
   }

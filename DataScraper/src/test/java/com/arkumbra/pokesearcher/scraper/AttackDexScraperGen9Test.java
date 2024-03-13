@@ -37,7 +37,7 @@ public class AttackDexScraperGen9Test {
     Move odorSleuth = scraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/odorsleuth.shtml");
     System.out.println(odorSleuth.getName());
 
-    assertEquals("Odor Sleuth", odorSleuth.getName().englishName);
+    assertEquals("Odor Sleuth", odorSleuth.getName().english);
     assertEquals("かぎわける", odorSleuth.getName().japanese);
     assertEquals(TypeValue.normal, odorSleuth.getType());
     assertEquals(AttackCategory.status, odorSleuth.getCategory());
@@ -74,7 +74,7 @@ public class AttackDexScraperGen9Test {
     Move heatCrash = scraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/heatcrash.shtml");
     System.out.println(heatCrash.getName());
 
-    assertEquals("Heat Crash", heatCrash.getName().englishName);
+    assertEquals("Heat Crash", heatCrash.getName().english);
     assertEquals("ヒートスタンプ", heatCrash.getName().japanese);
     assertEquals(TypeValue.fire, heatCrash.getType());
     assertEquals(AttackCategory.physical, heatCrash.getCategory());

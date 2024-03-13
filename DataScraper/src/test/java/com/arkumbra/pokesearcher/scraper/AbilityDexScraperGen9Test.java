@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +34,7 @@ public class AbilityDexScraperGen9Test {
     Ability zeroToHero = scraper.extractAbilityInfo("https://www.serebii.net/abilitydex/zerotohero.shtml");
     System.out.println(zeroToHero.getName());
 
-    assertEquals("Zero to Hero", zeroToHero.getName().englishName);
+    assertEquals("Zero to Hero", zeroToHero.getName().english);
     assertEquals("マイティチェンジ", zeroToHero.getName().japanese);
     assertEquals("The Pokémon transforms into its Hero Form when it switches out.", zeroToHero.getIngameDescription());
 
@@ -53,7 +52,7 @@ public class AbilityDexScraperGen9Test {
     Ability anticipation = scraper.extractAbilityInfo("https://www.serebii.net/abilitydex/anticipation.shtml");
     System.out.println(anticipation.getName());
 
-    assertEquals("Anticipation", anticipation.getName().englishName);
+    assertEquals("Anticipation", anticipation.getName().english);
     assertEquals("きけんよち", anticipation.getName().japanese);
     assertEquals("The Pokémon can sense an opposing Pokémon's dangerous moves.", anticipation.getIngameDescription());
 
@@ -71,7 +70,7 @@ public class AbilityDexScraperGen9Test {
     Ability deltaStream = scraper.extractAbilityInfo("https://www.serebii.net/abilitydex/deltastream.shtml");
     System.out.println(deltaStream.getName());
 
-    assertEquals("Delta Stream", deltaStream.getName().getEnglishName());
+    assertEquals("Delta Stream", deltaStream.getName().getEnglish());
     // No Japanese name listed on Serebii for whatever reason
     assertEquals(null, deltaStream.getName().getJapanese());
     assertEquals("The Pokémon changes the weather to eliminate all of the Flying type's weaknesses.", deltaStream.getIngameDescription());

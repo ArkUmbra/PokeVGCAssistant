@@ -68,7 +68,7 @@ public class PokedexScraper {
     // Name
     String englishName = dexTableNameNumberDataTds.get(0).text();
     Name name = new Name();
-    name.englishName = englishName;
+    name.english = englishName;
     pokemon.setName(name);
 
     // Pokedex number
@@ -163,7 +163,7 @@ public class PokedexScraper {
     // Name
     String englishName = dexTableNameNumberDataTds.get(0).text();
     Name name = new Name();
-    name.englishName = englishName;
+    name.english = englishName;
     pokemon.setName(name);
 
     // Pokedex number

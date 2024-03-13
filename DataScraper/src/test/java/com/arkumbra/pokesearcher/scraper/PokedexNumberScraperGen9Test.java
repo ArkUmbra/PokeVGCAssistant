@@ -392,7 +392,7 @@ public class PokedexNumberScraperGen9Test {
   }
 
   private void assertNames(Name expected, Name actual) {
-    assertEquals(expected.englishName, actual.englishName);
+    assertEquals(expected.english, actual.english);
   }
 
   private void assertPokedex(Map<PokedexRegion, Integer> expectedDex, PokedexNumber pokedexNumber) {
