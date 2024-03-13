@@ -104,6 +104,8 @@ public class PokedexScraper {
   private Pokemon extractPokemonInfoMultiForm(Document doc, Pokemon pokemon) {
     Elements formImages = doc.select("table.dextable:contains(Alternate Forms)").select("img");
     List<String> pokemonFormNames = formImages.stream()
+        // Sometimes there are other images like for items, etc, so try to only pick out the Pokemon
+        .filter(formImg -> formImg.attribute("src").getValue().contains("/pokemon/"))
         // Note: Sometimes the spelling form or forme is used, so this should handle both
         // alt value should be something like: "Kantonian Form", "Incarnate Forme", etc
         .map(formImg -> formImg.attr("alt"))
@@ -123,11 +125,18 @@ public class PokedexScraper {
 
     LinkedList<PokemonDetails> forms = new LinkedList<>();
 
+    // Name
+    String englishName = dexTableNameNumberDataTds.get(0).text();
+    Name name = new Name();
+    name.english = englishName;
+    pokemon.setName(name);
+
     for (int formOrder = 0; formOrder < pokemonFormNames.size(); formOrder++) {
       String pokemonFormName = pokemonFormNames.get(formOrder);
 
       PokemonDetails pokemonDetails = new PokemonDetails();
-      pokemonDetails.setFormName(pokemonFormName);
+      // Some pages just have the form name listed as the Pokemon's name... change it here to make it a bit clearer
+      pokemonDetails.setFormName(pokemonFormName.equals(name.english) ? "Default" : pokemonFormName);
 
       // a. Try searching by form name (just use the first few characters)
       Element typeTd = dexTableNameNumberDataTds.get(4);
@@ -160,12 +169,6 @@ public class PokedexScraper {
 
     PokemonDetails details = new PokemonDetails();
 
-    // Name
-    String englishName = dexTableNameNumberDataTds.get(0).text();
-    Name name = new Name();
-    name.english = englishName;
-    pokemon.setName(name);
-
     // Pokedex number
     Map<PokedexRegion, Integer> dexToNumber = extractDexInfo(
         dexTableNameNumberDataTds.get(2)
@@ -196,6 +199,7 @@ public class PokedexScraper {
     StringBuilder currentAbilityString = new StringBuilder();
 
     String hiddenTag = "(Hidden)";
+    String hiddenTagAlternate = "(Hidden Ability)";
 
     for (int i = 0; i < text.length(); i++) {
 
@@ -206,9 +210,9 @@ public class PokedexScraper {
         // Fast-forward the index to the end of this bracketed word we've found
         i += bracketedWord.length();
 
-        if (bracketedWord.equals(hiddenTag)) {
+        if (bracketedWord.equals(hiddenTag) || bracketedWord.equals(hiddenTagAlternate)) {
           // We found the hidden ability, so let's just add it to the current word and
-          currentAbilityString.append(hiddenTag);
+          currentAbilityString.append(bracketedWord);
 
         } else {
           // Seems like we found the form name, so lets store the current word and reset

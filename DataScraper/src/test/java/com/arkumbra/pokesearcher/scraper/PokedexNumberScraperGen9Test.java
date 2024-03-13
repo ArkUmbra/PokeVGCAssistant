@@ -135,12 +135,12 @@ public class PokedexNumberScraperGen9Test {
 
     assertEquals(kantoWeezing.getMoveset().getEggMoves(), galarWeezing.getMoveset().getEggMoves());
     assertEquals(List.of(
-          "curse",
-          "spite",
-          "painsplit",
-          "stockpile",
-          "spitup",
-          "swallow"
+            "curse",
+            "spite",
+            "painsplit",
+            "stockpile",
+            "spitup",
+            "swallow"
         ),
         kantoWeezing.getMoveset().getEggMoves());
 
@@ -190,7 +190,6 @@ public class PokedexNumberScraperGen9Test {
     assertEquals("slushrush", alolaSandshrew.getAbilities().getHiddenAbilityNameId().get());
 
 
-
     // -----
     // Use of 'forme'
     // Same types across formes
@@ -205,15 +204,15 @@ public class PokedexNumberScraperGen9Test {
     assertEquals("Incarnate Forme", incarnateLandorus.getFormName());
     assertEquals(linkedHashSet(TypeValue.ground, TypeValue.flying), incarnateLandorus.getTypes());
 
-    assertEquals(landorus.getDetails().getMoveset(), incarnateLandorus.getMoveset());
-    assertFalse(landorus.getDetails().getMoveset().getLevelUpMoves().isEmpty());
-    assertFalse(landorus.getDetails().getMoveset().getTmMoves().isEmpty());
-    assertTrue(landorus.getDetails().getMoveset().getEggMoves().isEmpty(),
+    assertFalse(incarnateLandorus.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(incarnateLandorus.getMoveset().getTmMoves().isEmpty());
+    assertTrue(incarnateLandorus.getMoveset().getEggMoves().isEmpty(),
         "Contained egg moves!! " + landorus.getDetails().getMoveset().getEggMoves());
 
     PokemonDetails therianLandorus = landorus.getAlternateForms().get(0);
     assertEquals("Therian Forme", therianLandorus.getFormName());
     assertEquals(linkedHashSet(TypeValue.ground, TypeValue.flying), therianLandorus.getTypes());
+    assertEquals(incarnateLandorus.getMoveset(), therianLandorus.getMoveset());
 
 
     assertEquals(1, incarnateLandorus.getAbilities().getStandardAbilityNameIds().size());
@@ -321,6 +320,43 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(1, normalDeoxys.getAbilities().getStandardAbilityNameIds().size());
     assertTrue(normalDeoxys.getAbilities().getStandardAbilityNameIds().contains("pressure"));
     assertOptionalEmpty(normalDeoxys.getAbilities().getHiddenAbilityNameId());
+
+    // -----
+    // Initially failing Pokemon - Palkia
+    // Wasn't able to parse correctly due to extra 'img' elements in the 'Alternate Forms' section
+    Pokemon palkia = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/palkia/");
+    System.out.println(palkia);
+
+    assertNames(new Name("Palkia"), palkia.getName());
+    assertTrue(palkia.hasAlternateForms());
+    assertEquals(1, palkia.getAlternateForms().size());
+
+    PokemonDetails basePalkia = palkia.getDetails();
+    assertEquals("Default", basePalkia.getFormName());
+    assertEquals(linkedHashSet(TypeValue.dragon, TypeValue.water), basePalkia.getTypes());
+
+    assertFalse(basePalkia.getMoveset().getLevelUpMoves().isEmpty());
+    assertFalse(basePalkia.getMoveset().getTmMoves().isEmpty());
+    assertTrue(basePalkia.getMoveset().getEggMoves().isEmpty(),
+        "Contained egg moves!! " + palkia.getDetails().getMoveset().getEggMoves());
+
+    assertEquals(new BaseStats(90, 120, 100, 150, 120, 100),
+        basePalkia.getBaseStats());
+
+    PokemonDetails originPalkia = palkia.getAlternateForms().get(0);
+    assertEquals("Origin Forme", originPalkia.getFormName());
+    assertEquals(linkedHashSet(TypeValue.dragon, TypeValue.water), originPalkia.getTypes());
+    assertEquals(basePalkia.getMoveset(), originPalkia.getMoveset());
+
+    assertEquals(1, basePalkia.getAbilities().getStandardAbilityNameIds().size(), "Abilities: " + basePalkia.getAbilities());
+    assertTrue(basePalkia.getAbilities().getStandardAbilityNameIds().contains("pressure"));
+    assertEquals("telepathy", basePalkia.getAbilities().getHiddenAbilityNameId().get());
+
+    assertEquals(basePalkia.getAbilities(), originPalkia.getAbilities());
+
+    assertEquals(new BaseStats(90, 100, 100, 150, 120, 120),
+        originPalkia.getBaseStats());
+
 
     // TODO Ogerpon
   }
