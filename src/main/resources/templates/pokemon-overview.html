@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Serving Web Content</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<p th:text="|Showing ${numOfPokemon} Pokemon|" />
+
+<table>
+    <tr>
+        <td>Name</td>
+        <td>Pokedex #</td>
+        <td>Type</td>
+        <td>Base Stat Total</td>
+        <td>HP</td>
+        <td>Atk</td>
+        <td>Def</td>
+        <td>SpAtk</td>
+        <td>SpDef</td>
+        <td>Speed</td>
+    </tr>
+    <tr th:each="summary: ${pokemonSummaries}">
+        <td>
+            <a th:href="@{/pokemon/{id}(id=${summary.idName})}">
+                <span th:text="${summary.name.english + ' (' + summary.formName + ')'}" />
+            </a>
+        </td>
+
+        <td th:text="${summary.pokedexNumber.national }" />
+
+        <td>
+            <span th:each="type: ${summary.types}">
+                <div th:replace="fragments/typeIcon :: ${type}" />
+            </span>
+        </td>
+        <td th:text="${summary.baseStats.total}" />
+        <td th:text="${summary.baseStats.hp}" />
+        <td th:text="${summary.baseStats.atk}" />
+        <td th:text="${summary.baseStats.def}" />
+        <td th:text="${summary.baseStats.specialAtk}" />
+        <td th:text="${summary.baseStats.specialDef}" />
+        <td th:text="${summary.baseStats.speed}" />
+    </tr>
+</table>
+
+</body>
+</html>

@@ -2,7 +2,8 @@ package com.arkumbra.pokesearcher.scraper;
 
 import java.util.Objects;
 
-public class MoveAcquire {
+
+public class MoveAcquire implements Comparable<MoveAcquire> {
   MoveAcquireType acquireType;
   int numberValue;
 
@@ -21,7 +22,7 @@ public class MoveAcquire {
     MoveAcquire moveAcquire = new MoveAcquire();
     if (value.equals("Evolve")) {
       moveAcquire.acquireType = MoveAcquireType.Evolve;
-    } else if (value.equals("—")) {
+    } else if (value.equals("—") || value.equals("Relearner")) {
       moveAcquire.acquireType = MoveAcquireType.Relearner;
     } else if (value.startsWith("TM")) {
       moveAcquire.acquireType = MoveAcquireType.TM;
@@ -60,5 +61,10 @@ public class MoveAcquire {
   @Override
   public int hashCode() {
     return Objects.hash(acquireType, numberValue);
+  }
+
+  @Override
+  public int compareTo(MoveAcquire o) {
+    return 0;
   }
 }

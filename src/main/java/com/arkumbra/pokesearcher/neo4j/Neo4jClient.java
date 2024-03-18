@@ -1,12 +1,15 @@
 package com.arkumbra.pokesearcher.neo4j;
 
+import com.arkumbra.pokesearcher.controller.PokemonDetail;
 import com.arkumbra.pokesearcher.rest.AbilityDetail;
+import com.arkumbra.pokesearcher.rest.OtherFormsSummary;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -219,6 +222,7 @@ public class Neo4jClient implements AutoCloseable {
           "english", move.getName().getEnglish(),
           "japanese", nullToBlank(move.getName().getJapanese()),
           "moveId", nullToBlank(move.getIdName()),
+          "accuracy", move.getAccuracy(),
           "pp", move.getPp(),
           "power", move.getPower(),
           "critRatio", move.getCritRatio().toString(),
@@ -350,43 +354,38 @@ public class Neo4jClient implements AutoCloseable {
     }
   }
 
-  public List<Ability> getAllAbilities() {
+  public List<AbilitySummary> getAllAbilities() {
     try (var session = driver.session()) {
       List<Record> allAbilities = session.executeWrite(tx -> {
         var query = new Query(
-            "MATCH (a:Ability) " +
-                "MATCH (a)-[:NAMED]->(n:Name) " +
-                "OPTIONAL MATCH (a)-[:WITH_ABILITY_BEHAVIOUR]->(m:AbilityMetaData) " +
-                "RETURN a.idString, n.english, n.japanese, a.description, collect(m.label)"
+            """
+                MATCH (a:Ability)
+                MATCH (a)-[:NAMED]->(n:Name)
+                OPTIONAL MATCH (a)-[:WITH_ABILITY_BEHAVIOUR]->(m:AbilityMetaData)
+                OPTIONAL MATCH (a)<-[]-(pokemon:PokemonDetails)
+                RETURN a.idString, n.english, n.japanese, a.description, collect(m.label), count(pokemon)
+                """
         );
         var result = tx.run(query);
         return result.list();
       });
 
-      List<Ability> abilities = allAbilities.stream().map(ability -> {
-        String idString = ability.values().get(0).asString();
-        String englishName = ability.values().get(1).asString();
-        String japaneseName = ability.values().get(2).asString();
-        String description = ability.values().get(3).asString();
-        List<AbilityMetaData> metaData = ability.values().get(4).asList(raw -> {
+      List<AbilitySummary> abilities = allAbilities.stream().map(abilityRecord -> {
+        String idString = abilityRecord.values().get(0).asString();
+        String englishName = abilityRecord.values().get(1).asString();
+        String japaneseName = abilityRecord.values().get(2).asString();
+        String description = abilityRecord.values().get(3).asString();
+        List<AbilityMetaData> metaData = abilityRecord.values().get(4).asList(raw -> {
           return AbilityMetaData.valueOf(raw.asString());
         });
-        return new Ability(idString, new Name(englishName, japaneseName), description, new HashSet<>(metaData));
+        Ability ability = new Ability(idString, new Name(englishName, japaneseName), description, new HashSet<>(metaData));
+        return new AbilitySummary(ability, abilityRecord.get(5).asInt());
       }).collect(Collectors.toList());
 
       return abilities;
     }
   }
 
-  /*
-MATCH (a:Ability {idString: 'unburden'})
-MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
-MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
-MATCH (pokemon)-[:NAMED]->(name:Name)
-MATCH (details)-[:OF_TYPE]->(type:TypeValue)
-RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form.formName, collect(type.label),
-       details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
-   */
   public AbilityDetail getAbilityDetail(String abilityId) {
     try (var session = driver.session()) {
 
@@ -464,6 +463,242 @@ RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form
         return new AbilityDetail(ability, pokemonWithRegularAbility, pokemonWithHiddenAbility);
       });
     }
+  }
+
+  public List<PokemonSummary> getAllPokemon() {
+    try (var session = driver.session()) {
+      List<Record> allPokemon = session.executeWrite(tx -> {
+        var query = new Query(
+            """
+                MATCH (details:PokemonDetails)
+                MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+                MATCH (pokemon)-[rDex:IN_DEX]->(dex:PokedexRegion{label:'National'})
+                MATCH (pokemon)-[:NAMED]->(name:Name)
+                MATCH (details)-[:OF_TYPE]->(type:TypeValue)
+                RETURN distinct(details.id), pokemon.id, rDex.num, name.english, name.japanese, form.formName, collect(type.label),
+                details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
+                ORDER BY rDex.num
+                """
+        );
+        var result = tx.run(query);
+        return result.list();
+      });
+
+      return allPokemon.stream().map(summaryRecord -> {
+        // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
+        String pokemonIdString = summaryRecord.get(1).asString();
+        Integer nationalDexNum = summaryRecord.get(2).asInt();
+        String englishName = summaryRecord.get(3).asString();
+        String japaneseName = summaryRecord.get(4).asString();
+        String formName = summaryRecord.get(5).asString();
+        List<TypeValue> types = summaryRecord.get(6).asList(rawType -> TypeValue.valueOf(rawType.asString()));
+
+        BaseStats baseStats = new BaseStats(
+            summaryRecord.get(7).asInt(),
+            summaryRecord.get(8).asInt(),
+            summaryRecord.get(9).asInt(),
+            summaryRecord.get(10).asInt(),
+            summaryRecord.get(11).asInt(),
+            summaryRecord.get(12).asInt()
+        );
+
+        return new PokemonSummary(pokemonIdString, new Name(englishName, japaneseName), formName, types, baseStats, new PokedexNumber(nationalDexNum));
+      }).collect(Collectors.toList());
+    }
+  }
+
+  public PokemonDetail getPokemonDetail(String pokemonId, String formName) {
+    try (var session = driver.session()) {
+      String qualifiedPokemonId = pokemonId + "-" + formName;
+
+      PokedexNumber pokedexNumber = getPokedexNumber(session, pokemonId);
+      OtherFormsSummary otherFormsSummary = getOtherFormsSummary(session, pokemonId, qualifiedPokemonId);
+      AbilitiesDetail abilitiesDetail = getPokemonAbilities(session, qualifiedPokemonId);
+      MovesetDetail movesetDetail = getPokemonMoveset(session, qualifiedPokemonId);
+
+      return session.executeWrite(tx -> {
+        var query = new Query(
+            """
+              MATCH (details:PokemonDetails {id:$qualifiedPokemonId})
+              MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+              MATCH (pokemon)-[:NAMED]->(name:Name)
+              MATCH (details)-[:OF_TYPE]->(type:TypeValue)
+              RETURN distinct(details.id), pokemon.id, name.english, name.japanese, collect(type.label),
+              details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
+              """,
+            parameters("qualifiedPokemonId", qualifiedPokemonId)
+        );
+
+        Record baseDetailResult = tx.run(query).single();
+
+        // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
+//        String pokemonIdString = baseDetailResult.get(1).asString();
+        String englishName = baseDetailResult.get(2).asString();
+        String japaneseName = baseDetailResult.get(3).asString();
+        List<TypeValue> types = baseDetailResult.get(4).asList(rawType -> TypeValue.valueOf(rawType.asString()));
+
+        BaseStats baseStats = new BaseStats(
+            baseDetailResult.get(5).asInt(),
+            baseDetailResult.get(6).asInt(),
+            baseDetailResult.get(7).asInt(),
+            baseDetailResult.get(8).asInt(),
+            baseDetailResult.get(9).asInt(),
+            baseDetailResult.get(10).asInt()
+        );
+
+        return new PokemonDetail(
+            pokemonId,
+            new Name(englishName, japaneseName),
+            types,
+            baseStats,
+            formName,
+            otherFormsSummary,
+            abilitiesDetail,
+            movesetDetail,
+            pokedexNumber
+        );
+      });
+
+    }
+  }
+
+  private OtherFormsSummary getOtherFormsSummary(Session session, String pokemonIdToMatch, String qualifiedPokemonIdToNotMatch) {
+    String queryString = """
+        MATCH (pokemon:Pokemon {id:$pokemonId})
+        MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details:PokemonDetails)
+        WHERE details.id <> $qualifiedPokemonIdThisForm
+        RETURN details.id,form.formName
+        """;
+    var queryParams = parameters(
+        "pokemonId", pokemonIdToMatch,
+          "qualifiedPokemonIdThisForm", qualifiedPokemonIdToNotMatch
+        );
+
+    return session.executeWrite(tx -> {
+      List<Pair<String, String>> formNamesToFormId = tx.run(queryString, queryParams).stream()
+          .map(record -> {
+            String qualifiedPokemonId = record.get(0).asString();
+            String formName = record.get(1).asString();
+
+            return new Pair<>(formName, qualifiedPokemonId);
+          }).toList();
+
+      return new OtherFormsSummary(formNamesToFormId);
+    });
+  }
+
+  private PokedexNumber getPokedexNumber(Session session, String pokemonId) {
+    String queryString = """
+        MATCH (pokemon:Pokemon {id:$pokemonId})
+        MATCH (pokemon)-[rd:IN_DEX]->(d)
+        RETURN rd.num, d.label
+        """;
+    var queryParams = parameters("pokemonId", pokemonId);
+
+    return session.executeWrite(tx -> {
+      PokedexNumber pokedexNumber = new PokedexNumber();
+
+      tx.run(queryString, queryParams).stream().forEach(record -> {
+        PokedexRegion region = PokedexRegion.valueOf(record.get(1).asString());
+        int num = record.get(0).asInt();
+        pokedexNumber.put(region, num);
+      });
+
+      return pokedexNumber;
+    });
+  }
+
+  private AbilitiesDetail getPokemonAbilities(Session session, String qualifiedPokemonId) {
+    String queryString = """
+        MATCH (details:PokemonDetails {id:$qualifiedPokemonId})
+        MATCH (details)-[r]->(a:Ability)
+        MATCH (a)-[]->(n:Name)
+        OPTIONAL MATCH (a)-[]->(m:AbilityMetaData)
+        return r.category, n.english, n.japanese, a.idString, a.description, collect(m.label);
+        """;
+    var queryParams = parameters("qualifiedPokemonId", qualifiedPokemonId);
+
+    return session.executeWrite(tx -> {
+      List<Record> result = tx.run(queryString, queryParams).list();
+
+      List<Ability> standardAbilities = new ArrayList<>();
+      Ability hiddenAbility = null;
+
+      for (Record record : result) {
+        boolean isHiddenAbility = record.get(0).asString().equals("hidden");
+        String englishName = record.get(1).asString();
+        String japaneseName = record.get(2).asString();
+        String abilityId = record.get(3).asString();
+        String description = record.get(4).asString();
+        Set<AbilityMetaData> metaData = new HashSet<>(record.get(5).asList(r -> AbilityMetaData.valueOf(r.asString())));
+
+        var ability = new Ability(abilityId, new Name(englishName, japaneseName), description, metaData);
+        if (isHiddenAbility) hiddenAbility = ability;
+        else standardAbilities.add(ability);
+      }
+
+      return new AbilitiesDetail(standardAbilities, hiddenAbility);
+    });
+  }
+
+  private MovesetDetail getPokemonMoveset(Session session, String qualifiedPokemonId) {
+    String queryString =
+        """
+            MATCH (details:PokemonDetails {id:$qualifiedPokemonId})
+            MATCH (details)-[r]->(m:Move)
+            MATCH (m)-[]->(n:Name)
+            MATCH (m)-[]->(type:TypeValue)
+            MATCH (m)-[]->(t:MoveTarget)
+            MATCH (m)-[]->(p:Priority)
+            MATCH (m)-[]->(c:AttackCategory)
+            OPTIONAL MATCH (m)-[]->(meta:AttackMetaData)
+            return type(r), r.acquire, n.english, n.japanese, m.description, m.power, m.pp, m.accuracy, 
+            m.effectChance, m.critRatio, t.label, p.label, c.label, m.id, type.label, collect(meta.label)
+            """;
+    var queryParams = parameters("qualifiedPokemonId", qualifiedPokemonId);
+
+    return session.executeWrite(tx -> {
+      List<Record> result = tx.run(queryString, queryParams).list();
+
+      List<Pair<MoveAcquire, Move>> levelUpMoves = new ArrayList<>();
+      List<Pair<MoveAcquire, Move>> tmMoves = new ArrayList<>();
+      List<Move> eggMoves = new ArrayList<>();
+
+      for (Record record : result) {
+        String movelistType = record.get(0).asString();
+        String acquireType = record.get(1).asString();
+        String englishName = record.get(2).asString();
+        String japaneseName = record.get(3).asString();
+        String description = record.get(4).asString();
+        int power = record.get(5).asInt(-1);
+        int pp = record.get(6).asInt(-1);
+        int accuracy = record.get(7).asInt(-1);
+        EffectChance effectChance = new EffectChance(record.get(8).asInt());
+        BigDecimal critRatio = new BigDecimal(record.get(9).asString());
+        MoveTarget target = MoveTarget.valueOf(record.get(10).asString());
+        Priority priority = Priority.valueOf(record.get(11).asString());
+        AttackCategory attackCategory = AttackCategory.valueOf(record.get(12).asString());
+        String moveId = record.get(13).asString();
+        TypeValue typeValue = TypeValue.valueOf(record.get(14).asString());
+        Set<AttackMetaData> metaData = new HashSet<>(record.get(15).asList(r -> AttackMetaData.valueOf(r.asString())));
+
+        Move move = new Move(moveId, new Name(englishName, japaneseName), typeValue, attackCategory, pp, power,
+            accuracy, description, critRatio, priority, effectChance, target, metaData);
+
+        if (movelistType.equals("WITH_EGG_MOVE")) {
+          eggMoves.add(move);
+        } else if (movelistType.equals("WITH_LEVEL_UP_MOVE")) {
+          levelUpMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
+        } else if (movelistType.equals("WITH_TM_MOVE")) {
+          tmMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
+        } else {
+          throw new IllegalArgumentException("Unexpected value for movelist type " + movelistType);
+        }
+      }
+
+      return new MovesetDetail(levelUpMoves, tmMoves, eggMoves);
+    });
+
   }
 
 

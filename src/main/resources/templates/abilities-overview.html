@@ -5,23 +5,25 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-<p th:text="|Hello, there are ${numOfAbilities} abilities|" />
+<p th:text="|Showing ${numOfAbilities} abilities|" />
 
 <table>
     <tr>
         <td>Ability</td>
         <td>Description</td>
+        <td># with this Ability</td>
         <td>Meta Data</td>
     </tr>
-    <tr th:each="ability: ${abilities}">
+    <tr th:each="summary: ${abilitySummaries}">
         <td>
-            <a th:href="@{/ability/{id}(id=${ability.idName})}">
-                <p th:text="${ability.name.english}" />
+            <a th:href="@{/ability/{id}(id=${summary.ability.idName})}">
+                <p th:text="${summary.ability.name.english}" />
             </a>
         </td>
 
-        <td th:text="${ability.ingameDescription}" />
-        <td th:text="${ability.metaData}" />
+        <td th:text="${summary.ability.ingameDescription}" />
+        <td th:text="${summary.matchingPokemon}" />
+        <td th:text="${summary.ability.metaData}" />
     </tr>
 </table>
 

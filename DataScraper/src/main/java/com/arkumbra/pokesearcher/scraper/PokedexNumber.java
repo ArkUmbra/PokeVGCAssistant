@@ -7,6 +7,20 @@ import java.util.Map;
 public class PokedexNumber {
   Map<PokedexRegion, Integer> dexNumbers = new HashMap<>();
 
+  public PokedexNumber() { }
+
+  public PokedexNumber(int natDexNum) {
+    dexNumbers.put(PokedexRegion.National, natDexNum);
+  }
+
+  public Integer getNational() {
+    return get(PokedexRegion.National);
+  }
+
+  public void put(PokedexRegion region, int num) {
+    dexNumbers.put(region, num);
+  }
+
   public Integer get(PokedexRegion region) {
     return dexNumbers.get(region);
   }

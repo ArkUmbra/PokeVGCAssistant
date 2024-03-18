@@ -115,6 +115,9 @@ public class PokedexScraper {
     Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
     List<String> abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
 
+
+    boolean baseStatsForAlternateFormsAreGroupedTogether = !doc.select("table.dextable:contains(Stats - Alternate Forms)").isEmpty();
+
     // TDs
     // 0 - Name
     // 1 - Other Names
@@ -147,7 +150,12 @@ public class PokedexScraper {
 
         // There should be a tr for each Pokemon form, and these seem to be in the same order they are listed in the
         // "Alternate Forms" section, so we should just be able to grab the TR by its ID/order
-        subTypeTd = typeTd.select("tr").get(formOrder);
+        // However, in certain cases like with Rotom, the ordering is different so we can try to find based on form  name first
+
+        subTypeTd = typeTd.select("tr:contains(" + pokemonFormName + ")").first();
+        if (subTypeTd == null) {
+          subTypeTd = typeTd.select("tr").get(formOrder);
+        }
       }
 
       // Abilities
@@ -161,9 +169,15 @@ public class PokedexScraper {
           formOrder == 0 ? "Normal" : pokemonFormName));
 
       // Base Stats
+      BaseStats baseStats = null;
       Elements allStatsTable = doc.select("table.dextable:contains(Base Stats - Total)");
-      pokemonDetails.setBaseStats(parseBaseStats(allStatsTable.get(formOrder)));
+      if (baseStatsForAlternateFormsAreGroupedTogether && formOrder > 0) {
+        baseStats = parseBaseStats(allStatsTable.get(allStatsTable.size() - 1));
+      } else {
+        baseStats = parseBaseStats(allStatsTable.get(formOrder));
+      }
 
+      pokemonDetails.setBaseStats(baseStats);
       forms.add(pokemonDetails);
     }
 

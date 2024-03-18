@@ -2,10 +2,10 @@ package com.arkumbra.pokesearcher.rest;
 
 import com.arkumbra.pokesearcher.scraper.BaseStats;
 import com.arkumbra.pokesearcher.scraper.Name;
+import com.arkumbra.pokesearcher.scraper.PokedexNumber;
 import com.arkumbra.pokesearcher.scraper.TypeValue;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 
 public class PokemonSummary {
   private final String idName;
@@ -13,6 +13,7 @@ public class PokemonSummary {
   private final String formName;
   private final Collection<TypeValue> types;
   private final BaseStats baseStats;
+  private PokedexNumber pokedexNumber;
 
   public PokemonSummary(String idName, Name name, String formName, Collection<TypeValue> types, BaseStats baseStats) {
     this.idName = idName;
@@ -20,6 +21,11 @@ public class PokemonSummary {
     this.formName = formName;
     this.types = types;
     this.baseStats = baseStats;
+  }
+
+  public PokemonSummary(String idName, Name name, String formName, Collection<TypeValue> types, BaseStats baseStats, PokedexNumber pokedexNumber) {
+    this(idName, name, formName, types, baseStats);
+    this.pokedexNumber = pokedexNumber;
   }
 
   public String getIdName() {
@@ -40,5 +46,9 @@ public class PokemonSummary {
 
   public BaseStats getBaseStats() {
     return baseStats;
+  }
+
+  public PokedexNumber getPokedexNumber() {
+    return pokedexNumber;
   }
 }

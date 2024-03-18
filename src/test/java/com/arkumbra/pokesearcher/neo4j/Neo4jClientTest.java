@@ -139,10 +139,36 @@ public class Neo4jClientTest {
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
 
-    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hawlucha/"));
-    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/sceptile/"));
-    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hitmonlee/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hawlucha/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/sceptile/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hitmonlee/"));
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/palkia/"));
   }
+
+//  @Disabled
+  @Test
+  public void testScrapeAndStoreAllPokemon() throws IOException {
+
+    PokedexScraper scraper = new PokedexScraper();
+
+    Set<String> allPokemonDexUrls = scraper.getAllPokemonDexUrls();
+
+//    for (int i = 0; i < allPokemonDexUrls.size(); i++) {
+
+    Iterator<String> iterator = allPokemonDexUrls.iterator();
+    for (int i = 0; i < 30; i++) {
+      String url = iterator.next();
+      System.out.println(url);
+      try {
+        Pokemon pokemon = scraper.extractPokemonInfo(url);
+        neo4jClient.storePokemon(pokemon);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+  }
+
 
   @Test
   public void testGetAbilities() {

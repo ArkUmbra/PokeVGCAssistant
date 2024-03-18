@@ -19,6 +19,29 @@ public class Move implements DataViewSummary {
   private MoveTarget moveTarget;
   private Set<AttackMetaData> attackMetaData;
 
+  public Move() {
+  }
+
+  public Move(String idName, Name name, TypeValue type, AttackCategory category,
+              int pp, int power, int accuracy, String ingameDescription,
+              BigDecimal critRatio, Priority priority, EffectChance effectChance,
+              MoveTarget moveTarget, Set<AttackMetaData> attackMetaData
+  ) {
+    this.idName = idName;
+    this.name = name;
+    this.type = type;
+    this.category = category;
+    this.pp = pp;
+    this.power = power;
+    this.accuracy = accuracy;
+    this.ingameDescription = ingameDescription;
+    this.critRatio = critRatio;
+    this.priority = priority;
+    this.effectChance = effectChance;
+    this.moveTarget = moveTarget;
+    this.attackMetaData = attackMetaData;
+  }
+
   public String getIdName() {
     return idName;
   }

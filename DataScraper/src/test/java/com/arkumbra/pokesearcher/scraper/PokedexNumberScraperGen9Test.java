@@ -357,6 +357,69 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(new BaseStats(90, 100, 100, 150, 120, 120),
         originPalkia.getBaseStats());
 
+  }
+
+  @Test
+  public void testRotom() throws Exception {
+// -----
+    // Initially failing Pokemon - Rotom
+    Pokemon rotom = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/rotom/");
+    System.out.println(rotom);
+
+    assertNames(new Name("Rotom"), rotom.getName());
+    assertTrue(rotom.hasAlternateForms());
+    assertEquals(5, rotom.getAlternateForms().size());
+
+    PokemonDetails baseRotom = rotom.getDetails();
+    assertEquals("Default", baseRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.ghost), baseRotom.getTypes());
+
+    PokemonDetails fanRotom = rotom.getAlternateForms().get(0);
+    assertEquals("Fan Rotom", fanRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.flying), fanRotom.getTypes());
+
+    PokemonDetails frostRotom = rotom.getAlternateForms().get(1);
+    assertEquals("Frost Rotom", frostRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.ice), frostRotom.getTypes());
+
+    PokemonDetails heatRotom = rotom.getAlternateForms().get(2);
+    assertEquals("Heat Rotom", heatRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.fire), heatRotom.getTypes());
+
+    PokemonDetails mowRotom = rotom.getAlternateForms().get(3);
+    assertEquals("Mow Rotom", mowRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.grass), mowRotom.getTypes());
+
+    PokemonDetails washRotom = rotom.getAlternateForms().get(4);
+    assertEquals("Wash Rotom", washRotom.getFormName());
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.water), washRotom.getTypes());
+
+
+
+
+//    assertFalse(basePalkia.getMoveset().getLevelUpMoves().isEmpty());
+//    assertFalse(basePalkia.getMoveset().getTmMoves().isEmpty());
+//    assertTrue(basePalkia.getMoveset().getEggMoves().isEmpty(),
+//        "Contained egg moves!! " + palkia.getDetails().getMoveset().getEggMoves());
+
+    assertEquals(new BaseStats(50, 50, 77, 95, 77, 91),
+        baseRotom.getBaseStats());
+
+//    PokemonDetails originPalkia = palkia.getAlternateForms().get(0);
+//    assertEquals("Origin Forme", originPalkia.getFormName());
+//    assertEquals(linkedHashSet(TypeValue.dragon, TypeValue.water), originPalkia.getTypes());
+//    assertEquals(basePalkia.getMoveset(), originPalkia.getMoveset());
+//
+//    assertEquals(1, basePalkia.getAbilities().getStandardAbilityNameIds().size(), "Abilities: " + basePalkia.getAbilities());
+//    assertTrue(basePalkia.getAbilities().getStandardAbilityNameIds().contains("pressure"));
+//    assertEquals("telepathy", basePalkia.getAbilities().getHiddenAbilityNameId().get());
+//
+//    assertEquals(basePalkia.getAbilities(), originPalkia.getAbilities());
+//
+//    assertEquals(new BaseStats(90, 100, 100, 150, 120, 120),
+//        originPalkia.getBaseStats());
+
+
 
     // TODO Ogerpon
   }
