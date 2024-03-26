@@ -20,10 +20,14 @@ public class MoveAcquire implements Comparable<MoveAcquire> {
 
   public static MoveAcquire of(String value) {
     MoveAcquire moveAcquire = new MoveAcquire();
-    if (value.equals("Evolve")) {
+    if (value.equals(MoveAcquireType.Evolve.name())) {
       moveAcquire.acquireType = MoveAcquireType.Evolve;
-    } else if (value.equals("—") || value.equals("Relearner")) {
+    } else if (value.equals("—") || value.equals(MoveAcquireType.Relearner.name())) {
       moveAcquire.acquireType = MoveAcquireType.Relearner;
+    } else if (value.equals(MoveAcquireType.PreEvoOnly.name())) {
+      moveAcquire.acquireType = MoveAcquireType.PreEvoOnly;
+    } else if (value.equals(MoveAcquireType.Distribution.name())) {
+      moveAcquire.acquireType = MoveAcquireType.Distribution;
     } else if (value.startsWith("TM")) {
       moveAcquire.acquireType = MoveAcquireType.TM;
       moveAcquire.numberValue = Integer.parseInt(value.split("TM")[1]);
@@ -64,7 +68,11 @@ public class MoveAcquire implements Comparable<MoveAcquire> {
   }
 
   @Override
-  public int compareTo(MoveAcquire o) {
-    return 0;
+  public int compareTo(MoveAcquire that) {
+    if (this.acquireType.ordinal() != that.acquireType.ordinal()) {
+      return this.acquireType.ordinal() - that.acquireType.ordinal();
+    }
+
+    return Integer.compare(this.numberValue, that.numberValue);
   }
 }

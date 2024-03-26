@@ -1,0 +1,98 @@
+package com.arkumbra.pokesearcher.scraper;
+
+
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.util.*;
+
+public class TaurosSpecificPokedexScraper extends MultiFormPokedexScraper implements PokemonSpecificScraper {
+  private static final String URL = "https://www.serebii.net/pokedex-sv/tauros/";
+
+  @Override
+  public boolean validForUrl(String url) {
+    return url.equals(URL);
+  }
+
+  @Override
+  public Pokemon extractPokemonInfo(Document doc, Pokemon pokemon) {
+    Elements formImages = getAlternateFormDexTable(doc).select("img");
+    List<String> pokemonFormNames = List.of(
+        "Kantonian Form",
+        "Paldean Form (Combat Breed)",
+        "Paldean Form (Blaze Breed)",
+        "Paldean Form (Aqua Breed)"
+    );
+
+    List<String> pokemonFormAltTextForMoveset = List.of(
+        "Regular Form",
+        "Paldean Form",
+        "Blaze Breed",
+        "Aqua Breed"
+    );
+
+    // First form can also be considered 'Normal', so we can use that when searching for matching data
+    Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
+    List<String> abilityTextSplitByForm = splitUpAbilitiesHeaderStringForMultiFormPokemon(abilityHeaderBlockTd.text());
+
+    // TDs
+    // 0 - Name
+    // 1 - Other Names
+    // 2 - No.
+    // 3 - Gender Ratio
+    // 4 - Type (for each form)
+    Elements dexTableNameNumberDataTds = Util.selectDataRowTdsByPartOfTrHeading(doc, "Other names");
+
+    LinkedList<PokemonDetails> forms = new LinkedList<>();
+
+    // Name
+    String englishName = dexTableNameNumberDataTds.get(0).text();
+    Name name = new Name();
+    name.english = englishName;
+    pokemon.setName(name);
+
+    for (int formOrder = 0; formOrder < pokemonFormNames.size(); formOrder++) {
+      String pokemonFormName = pokemonFormNames.get(formOrder);
+
+      PokemonDetails pokemonDetails = new PokemonDetails();
+      pokemonDetails.setFormName(pokemonFormName);
+
+      Element typeTd = dexTableNameNumberDataTds.get(4);
+      Element subTypeTd = typeTd;
+      if (! typeTd.select("tbody").isEmpty()) {
+        subTypeTd = typeTd.select("tr").get(formOrder);
+      }
+
+      String abilityTextString =  abilityTextSplitByForm.get(pokemonFormName.equals("Kantonian Form") ? 0 : 1);
+      pokemonDetails.setAbilities(parseAbilitiesFromTextString(abilityTextString));
+      pokemonDetails.setTypes(extractTypes(subTypeTd.select("a")));
+      pokemonDetails.setMoveset(extractMovesetForMultiForm(doc, pokemonFormAltTextForMoveset.get(formOrder)));
+
+      // Base Stats
+      BaseStats baseStats = null;
+      Elements allStatsTable = doc.select("table.dextable:contains(Base Stats - Total)");
+      baseStats = parseBaseStats(allStatsTable.get(pokemonFormName.equals("Kantonian Form") ? 0 : 1));
+
+      pokemonDetails.setBaseStats(baseStats);
+      forms.add(pokemonDetails);
+    }
+
+    PokemonDetails details = new PokemonDetails();
+
+    // Pokedex number
+    Map<PokedexRegion, Integer> dexToNumber = extractDexInfo(
+        dexTableNameNumberDataTds.get(2)
+            .select("table > tbody > tr > td")
+    );
+
+    PokedexNumber pokedexNumber = new PokedexNumber();
+    pokedexNumber.dexNumbers = dexToNumber;
+    pokemon.setPokedexNumber(pokedexNumber);
+    pokemon.setDetails(forms.removeFirst());
+    pokemon.setAlternateForms(forms);
+
+    return pokemon;
+  }
+
+}

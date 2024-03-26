@@ -5,9 +5,11 @@ import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.OtherFormsSummary;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
+import org.apache.logging.log4j.util.Strings;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -74,7 +76,7 @@ public class Neo4jClient implements AutoCloseable {
   }
 
   private void storePokemonForme(Session session, String idName, PokemonDetails pokemonDetails) {
-    String qualifiedFormName = idName + "-" + pokemonDetails.getFormName();
+    String qualifiedFormName = buildQualifiedPokemonName(idName, pokemonDetails.getFormName());
 
     String createPokemonDetailQuery =
         """
@@ -200,6 +202,11 @@ public class Neo4jClient implements AutoCloseable {
 
   }
 
+  private String buildQualifiedPokemonName(String idName, String formName) {
+    return idName +
+        (formName == null || formName.equals("")  ? "" : "-" + formName);
+  }
+
   public void storeMove(Move move) {
     try (var session = driver.session()) {
       String createMoveDetails =
@@ -208,7 +215,7 @@ public class Neo4jClient implements AutoCloseable {
           "MATCH (pr:Priority {label:$priority}) \n" +
           "MATCH (mt:MoveTarget {label:$moveTarget}) \n" +
           "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
-          "MERGE (m:Move {id:$moveId, summary:$summary, description:$description, pp:$pp, power:$power, critRatio:$critRatio, effectChance:$effectChance}) \n" +
+          "MERGE (m:Move {id:$moveId, summary:$summary, accuracy:$accuracy, description:$description, pp:$pp, power:$power, critRatio:$critRatio, effectChance:$effectChance}) \n" +
           "MERGE (m)-[:NAMED]->(n) \n" +
           "MERGE (m)-[:TARGETS]->(mt) \n" +
           "MERGE (m)-[:WITH_PRIORITY]->(pr) \n" +
@@ -429,7 +436,6 @@ public class Neo4jClient implements AutoCloseable {
         List<PokemonSummary> pokemonWithRegularAbility = new ArrayList<>();
         List<PokemonSummary> pokemonWithHiddenAbility = new ArrayList<>();
         matchingPokemon.forEachRemaining(pokemonResult -> {
-          String qualifiedFormName = pokemonResult.get(0).asString();
           boolean isHiddenAbility = pokemonResult.get(1).asString().equals("hidden");
           Name name = new Name(
               pokemonResult.get(2).asString(),
@@ -509,7 +515,7 @@ public class Neo4jClient implements AutoCloseable {
 
   public PokemonDetail getPokemonDetail(String pokemonId, String formName) {
     try (var session = driver.session()) {
-      String qualifiedPokemonId = pokemonId + "-" + formName;
+      String qualifiedPokemonId = buildQualifiedPokemonName(pokemonId, formName);
 
       PokedexNumber pokedexNumber = getPokedexNumber(session, pokemonId);
       OtherFormsSummary otherFormsSummary = getOtherFormsSummary(session, pokemonId, qualifiedPokemonId);
@@ -694,6 +700,14 @@ public class Neo4jClient implements AutoCloseable {
         } else {
           throw new IllegalArgumentException("Unexpected value for movelist type " + movelistType);
         }
+      }
+
+      try {
+        Collections.sort(levelUpMoves);
+        Collections.sort(tmMoves);
+        Collections.sort(eggMoves);
+      } catch (Exception e) {
+        e.printStackTrace();
       }
 
       return new MovesetDetail(levelUpMoves, tmMoves, eggMoves);

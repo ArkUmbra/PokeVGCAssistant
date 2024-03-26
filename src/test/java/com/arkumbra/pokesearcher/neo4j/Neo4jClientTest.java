@@ -108,7 +108,7 @@ public class Neo4jClientTest {
   @Test
   public void testScrapeAndStoreSingleMove() throws IOException {
     AttackDexScraper attackDexScraper = new AttackDexScraper();
-    Move heatCrash = attackDexScraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/junglehealing.shtml");
+    Move heatCrash = attackDexScraper.extractMoveInfo("https://www.serebii.net/attackdex-sv/heatcrash.shtml");
 
     neo4jClient.storeMove(heatCrash);
   }
@@ -142,7 +142,12 @@ public class Neo4jClientTest {
 //    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hawlucha/"));
 //    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/sceptile/"));
 //    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/hitmonlee/"));
-    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/palkia/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/landorus/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/pikachu/"));
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/raichu/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/scatterbug/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/spewpa/"));
+//    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/vivillon/"));
   }
 
 //  @Disabled
@@ -156,7 +161,8 @@ public class Neo4jClientTest {
 //    for (int i = 0; i < allPokemonDexUrls.size(); i++) {
 
     Iterator<String> iterator = allPokemonDexUrls.iterator();
-    for (int i = 0; i < 30; i++) {
+//    for (String url : allPokemonDexUrls) {
+    for (int i = 0; i < 50; i++) {
       String url = iterator.next();
       System.out.println(url);
       try {

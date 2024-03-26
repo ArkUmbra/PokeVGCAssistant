@@ -3,7 +3,7 @@ package com.arkumbra.pokesearcher.scraper;
 import java.math.BigDecimal;
 import java.util.Set;
 
-public class Move implements DataViewSummary {
+public class Move implements DataViewSummary, Comparable<Move> {
 
   private String idName;
   private Name name;
@@ -150,5 +150,10 @@ public class Move implements DataViewSummary {
   public String getSummary() {
     return (power > 0 ? "Power: " + power + " -> " : "") +
         ingameDescription;
+  }
+
+  @Override
+  public int compareTo(Move other) {
+    return this.idName.compareTo(other.idName);
   }
 }

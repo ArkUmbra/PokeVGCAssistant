@@ -2,7 +2,7 @@ package com.arkumbra.pokesearcher.scraper;
 
 import java.util.Objects;
 
-public class Pair<L, R> {
+public class Pair<L, R> implements Comparable<Pair<L, R>> {
   L left;
   R right;
 
@@ -37,5 +37,15 @@ public class Pair<L, R> {
 
   public R getRight() {
     return right;
+  }
+
+  @Override
+  public int compareTo(Pair<L, R> that) {
+    if (that.left instanceof Comparable) {
+      Comparable comparableThis = (Comparable) this.left;
+      Comparable comparableThat = (Comparable) that.left;
+      return comparableThis.compareTo(comparableThat);
+    }
+    return 0;
   }
 }

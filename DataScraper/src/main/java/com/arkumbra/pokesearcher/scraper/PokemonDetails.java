@@ -3,20 +3,20 @@ package com.arkumbra.pokesearcher.scraper;
 import java.util.LinkedHashSet;
 
 public class PokemonDetails {
+  private String formName;
   private LinkedHashSet<TypeValue> types;
   private Abilities abilities;
   private BaseStats baseStats;
   private Moveset moveset;
-  private String formName;
 
   @Override
   public String toString() {
     return "PokemonDetails{" +
-        "types=" + types +
+        "formName='" + formName + '\'' +
+        ", types=" + types +
         ", abilities=" + abilities +
         ", baseStats=" + baseStats +
         ", moveset=" + moveset +
-        ", formName='" + formName + '\'' +
         '}';
   }
 
@@ -45,7 +45,7 @@ public class PokemonDetails {
   }
 
   public String getFormName() {
-    return formName == null ? "Default" : formName;
+    return formName == null ? "" : formName;
   }
 
   public void setFormName(String formName) {

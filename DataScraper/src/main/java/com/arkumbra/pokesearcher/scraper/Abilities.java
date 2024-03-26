@@ -7,10 +7,18 @@ import java.util.Optional;
 public class Abilities {
   private final List<String> standardAbilityNameIds;
   private final String hiddenAbilityNameId;
+  private final String specialAbilityNameId;
 
   public Abilities(List<String> standardAbilityNameIds, String hiddenAbilityNameId) {
     this.standardAbilityNameIds = standardAbilityNameIds;
     this.hiddenAbilityNameId = hiddenAbilityNameId;
+    this.specialAbilityNameId = null;
+  }
+
+  public Abilities(List<String> standardAbilityNameIds, String hiddenAbilityNameId, String specialAbilityNameId) {
+    this.standardAbilityNameIds = standardAbilityNameIds;
+    this.hiddenAbilityNameId = hiddenAbilityNameId;
+    this.specialAbilityNameId = specialAbilityNameId;
   }
 
   public List<String> getStandardAbilityNameIds() {
@@ -21,18 +29,24 @@ public class Abilities {
     return Optional.ofNullable(hiddenAbilityNameId);
   }
 
+  public Optional<String> getSpecialAbilityNameId() {
+    return Optional.ofNullable(specialAbilityNameId);
+  }
+
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Abilities abilities = (Abilities) o;
-    return Objects.equals(standardAbilityNameIds, abilities.standardAbilityNameIds) && Objects.equals(hiddenAbilityNameId, abilities.hiddenAbilityNameId);
+    return Objects.equals(standardAbilityNameIds, abilities.standardAbilityNameIds) &&
+        Objects.equals(hiddenAbilityNameId, abilities.hiddenAbilityNameId) &&
+        Objects.equals(specialAbilityNameId, abilities.specialAbilityNameId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(standardAbilityNameIds, hiddenAbilityNameId);
+    return Objects.hash(standardAbilityNameIds, hiddenAbilityNameId, specialAbilityNameId);
   }
 
   @Override
@@ -40,6 +54,7 @@ public class Abilities {
     return "Abilities{" +
         "abilityNameId=" + standardAbilityNameIds +
         ", hiddenAbilityNameId='" + hiddenAbilityNameId + '\'' +
+        ", specialAbilityNameId='" + specialAbilityNameId + '\'' +
         '}';
   }
 }

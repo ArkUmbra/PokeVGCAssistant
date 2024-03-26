@@ -9,7 +9,7 @@ import java.util.*;
 import static com.arkumbra.pokesearcher.scraper.TestUtils.assertOptionalEmpty;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PokedexNumberScraperGen9Test {
+public class PokedexScraperGen9Test {
 
   private PokedexScraper scraper;
 
@@ -18,9 +18,113 @@ public class PokedexNumberScraperGen9Test {
     this.scraper = new PokedexScraper();
   }
 
+
   @Test
-  public void testExecute() throws IOException {
-    scraper.execute();
+  public void testOnlyPokemonUrlsAreExtracted() throws IOException {
+    Set<String> allPokemonDexUrls = scraper.getAllPokemonDexUrls();
+    System.out.println(allPokemonDexUrls);
+    // The select boxes on the top level Pokedex page contained these links which we don't want, so make sure they are
+    // excluded
+    assertFalse(allPokemonDexUrls.contains("https://www.serebii.net/pokedex-sv/egg/amorphous.shtml"));
+    assertFalse(allPokemonDexUrls.contains("https://www.serebii.net/pokedex-sv/egg/noeggs.shtml"));
+    assertFalse(allPokemonDexUrls.contains("https://www.serebii.net/pokedex-sv/egg/monster.shtml"));
+    assertFalse(allPokemonDexUrls.contains("https://www.serebii.net/pokedex-sv//"));
+  }
+
+  @Test
+  public void testPagesWhichCausedErrors() throws IOException {
+    // These Pokemon have all failed to parse correctly at one point, usually due to having multiple forms
+
+    List<String> urls = List.of(
+        "https://www.serebii.net/pokedex-sv/weezing/",
+        "https://www.serebii.net/pokedex-sv/basculegion/",
+        "https://www.serebii.net/pokedex-sv/sawsbuck/",
+        "https://www.serebii.net/pokedex-sv/tatsugiri/",
+        "https://www.serebii.net/pokedex-sv/arceus/",
+        "https://www.serebii.net/pokedex-sv/shellos/",
+        "https://www.serebii.net/pokedex-sv/dudunsparce/",
+        "https://www.serebii.net/pokedex-sv/tauros/",
+        "https://www.serebii.net/pokedex-sv/meowstic/",
+        "https://www.serebii.net/pokedex-sv/smeargle/",
+        "https://www.serebii.net/pokedex-sv/cosmoem/",
+        "https://www.serebii.net/pokedex-sv/minior/",
+        "https://www.serebii.net/pokedex-sv/magikarp/",
+        "https://www.serebii.net/pokedex-sv/oricorio/",
+        "https://www.serebii.net/pokedex-sv/basculin/",
+        "https://www.serebii.net/pokedex-sv/ogerpon/",
+        "https://www.serebii.net/pokedex-sv/indeedee/"
+    );
+
+    for (String url : urls) {
+      System.out.println(url);
+      Pokemon pokemon = scraper.extractPokemonInfo(url);
+      System.out.println(pokemon);
+    }
+  }
+
+  @Test
+  public void testAllRegionalForms() throws IOException {
+    // These Pokemon have all failed to parse correctly at one point, usually due to having multiple forms
+
+    List<String> urls = List.of(
+        "https://www.serebii.net/pokedex-sv/raichu/",
+        "https://www.serebii.net/pokedex-sv/sandshrew/",
+        "https://www.serebii.net/pokedex-sv/sandslash/",
+        "https://www.serebii.net/pokedex-sv/vulpix/",
+        "https://www.serebii.net/pokedex-sv/ninetales/",
+        "https://www.serebii.net/pokedex-sv/diglett/",
+        "https://www.serebii.net/pokedex-sv/dugtrio/",
+        "https://www.serebii.net/pokedex-sv/meowth/",
+        "https://www.serebii.net/pokedex-sv/persian/",
+        "https://www.serebii.net/pokedex-sv/geodude/",
+        "https://www.serebii.net/pokedex-sv/graveler/",
+        "https://www.serebii.net/pokedex-sv/golem/",
+        "https://www.serebii.net/pokedex-sv/grimer/",
+        "https://www.serebii.net/pokedex-sv/muk/",
+        "https://www.serebii.net/pokedex-sv/exeggutor/",
+        "https://www.serebii.net/pokedex-sv/slowpoke/",
+        "https://www.serebii.net/pokedex-sv/slowbro/",
+        "https://www.serebii.net/pokedex-sv/slowking/",
+        "https://www.serebii.net/pokedex-sv/weezing/",
+        "https://www.serebii.net/pokedex-sv/articuno/",
+        "https://www.serebii.net/pokedex-sv/zapdos/",
+        "https://www.serebii.net/pokedex-sv/moltres/",
+        "https://www.serebii.net/pokedex-sv/growlithe/",
+        "https://www.serebii.net/pokedex-sv/arcanine/",
+        "https://www.serebii.net/pokedex-sv/voltorb/",
+        "https://www.serebii.net/pokedex-sv/typhlosion/",
+        "https://www.serebii.net/pokedex-sv/qwilfish/",
+        "https://www.serebii.net/pokedex-sv/sneasel/",
+        "https://www.serebii.net/pokedex-sv/samurott/",
+        "https://www.serebii.net/pokedex-sv/lilligant/",
+        "https://www.serebii.net/pokedex-sv/zorua/",
+        "https://www.serebii.net/pokedex-sv/zoroark/",
+        "https://www.serebii.net/pokedex-sv/braviary/",
+        "https://www.serebii.net/pokedex-sv/sliggoo/",
+        "https://www.serebii.net/pokedex-sv/goodra/",
+        "https://www.serebii.net/pokedex-sv/avalugg/",
+        "https://www.serebii.net/pokedex-sv/decidueye/",
+        "https://www.serebii.net/pokedex-sv/wooper/"
+    );
+
+    for (String url : urls) {
+      System.out.println(url);
+      try {
+        Pokemon pokemon = scraper.extractPokemonInfo(url);
+      } catch(Exception e) {
+        e.printStackTrace();
+      }
+//      System.out.println(pokemon);
+    }
+  }
+
+  @Test
+  public void testScrapePikachu() throws IOException {
+    Pokemon pokemon = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/pikachu/");
+    System.out.println(pokemon);
+
+    assertTrue(pokemon.getDetails().getMoveset().getLevelUpMoves().contains(new Pair<>(new MoveAcquire(MoveAcquireType.Distribution), "fly")));
+    assertTrue(pokemon.getDetails().getMoveset().getLevelUpMoves().contains(new Pair<>(new MoveAcquire(MoveAcquireType.Distribution), "celebrate")));
   }
 
   @Test
@@ -332,7 +436,7 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(1, palkia.getAlternateForms().size());
 
     PokemonDetails basePalkia = palkia.getDetails();
-    assertEquals("Default", basePalkia.getFormName());
+    assertEquals("", basePalkia.getFormName());
     assertEquals(linkedHashSet(TypeValue.dragon, TypeValue.water), basePalkia.getTypes());
 
     assertFalse(basePalkia.getMoveset().getLevelUpMoves().isEmpty());
@@ -357,6 +461,7 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(new BaseStats(90, 100, 100, 150, 120, 120),
         originPalkia.getBaseStats());
 
+    // TODO Ogerpon
   }
 
   @Test
@@ -371,7 +476,7 @@ public class PokedexNumberScraperGen9Test {
     assertEquals(5, rotom.getAlternateForms().size());
 
     PokemonDetails baseRotom = rotom.getDetails();
-    assertEquals("Default", baseRotom.getFormName());
+    assertEquals("", baseRotom.getFormName());
     assertEquals(linkedHashSet(TypeValue.electric, TypeValue.ghost), baseRotom.getTypes());
 
     PokemonDetails fanRotom = rotom.getAlternateForms().get(0);
@@ -394,38 +499,37 @@ public class PokedexNumberScraperGen9Test {
     assertEquals("Wash Rotom", washRotom.getFormName());
     assertEquals(linkedHashSet(TypeValue.electric, TypeValue.water), washRotom.getTypes());
 
-
-
-
-//    assertFalse(basePalkia.getMoveset().getLevelUpMoves().isEmpty());
-//    assertFalse(basePalkia.getMoveset().getTmMoves().isEmpty());
-//    assertTrue(basePalkia.getMoveset().getEggMoves().isEmpty(),
-//        "Contained egg moves!! " + palkia.getDetails().getMoveset().getEggMoves());
-
     assertEquals(new BaseStats(50, 50, 77, 95, 77, 91),
         baseRotom.getBaseStats());
+  }
 
-//    PokemonDetails originPalkia = palkia.getAlternateForms().get(0);
-//    assertEquals("Origin Forme", originPalkia.getFormName());
-//    assertEquals(linkedHashSet(TypeValue.dragon, TypeValue.water), originPalkia.getTypes());
-//    assertEquals(basePalkia.getMoveset(), originPalkia.getMoveset());
-//
-//    assertEquals(1, basePalkia.getAbilities().getStandardAbilityNameIds().size(), "Abilities: " + basePalkia.getAbilities());
-//    assertTrue(basePalkia.getAbilities().getStandardAbilityNameIds().contains("pressure"));
-//    assertEquals("telepathy", basePalkia.getAbilities().getHiddenAbilityNameId().get());
-//
-//    assertEquals(basePalkia.getAbilities(), originPalkia.getAbilities());
-//
-//    assertEquals(new BaseStats(90, 100, 100, 150, 120, 120),
-//        originPalkia.getBaseStats());
+  @Test
+  public void testRegionalForms() throws IOException {
+    Pokemon raichu = scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/raichu/");
+    System.out.println(raichu);
 
+    PokemonDetails kantonianRaichu = raichu.getDetails();
+    assertEquals(linkedHashSet(TypeValue.electric), kantonianRaichu.getTypes());
+    assertEquals(kantonianRaichu.getMoveset().getLevelUpMoves().get(0).right, "thunderpunch");
+    assertTrue(kantonianRaichu.getMoveset().getTmMoves().stream().map(tm -> tm.right).toList()
+        .contains("disarmingvoice"));
+    assertFalse(kantonianRaichu.getMoveset().getTmMoves().stream().map(tm -> tm.right).toList()
+        .contains("storedpower"));
 
-
-    // TODO Ogerpon
+    assertEquals(1, raichu.getAlternateForms().size());
+    PokemonDetails alolanRaichu = raichu.getAlternateForms().get(0);
+    assertEquals(linkedHashSet(TypeValue.electric, TypeValue.psychic), alolanRaichu.getTypes());
+    assertEquals(alolanRaichu.getMoveset().getLevelUpMoves().get(0).right, "psychic");
+    assertFalse(alolanRaichu.getMoveset().getTmMoves().stream().map(tm -> tm.right).toList()
+        .contains("disarmingvoice"));
+    assertTrue(alolanRaichu.getMoveset().getTmMoves().stream().map(tm -> tm.right).toList()
+        .contains("storedpower"));
   }
 
   @Test
   public void testSplitMultiFormAbilityStrings() {
+    MultiFormPokedexScraper scraper = new MultiFormPokedexScraper();
+
     // Weezing
     String abilitiesRaw = "Abilities: Levitate - Neutralizing Gas - Stench (Hidden) (Normal Forme) - Levitate- Neutralizing Gas - Misty Surge (Hidden) (Galarian Form)";
 

@@ -11,6 +11,7 @@ import java.util.Set;
 
 public class Util {
 
+
   public static Document getPageWithDelay(String url) {
     try {
       Thread.sleep(50);
@@ -29,7 +30,7 @@ public class Util {
     return getUrlsForAllSelectURLObjectsOnPage(serebiiPageLink, null);
   }
 
-  public static Set<String> getUrlsForAllSelectURLObjectsOnPage(String serebiiPageLink, String forLinksWithText) throws IOException {
+  public static Set<String> getUrlsForAllSelectURLObjectsOnPage(String serebiiPageLink, String forLinksWithText, String... excludeLinksWithText) throws IOException {
     // Some pages have duplicate values, so just using a set to simplify things
     Set<String> urls = new HashSet<>();
 
@@ -40,7 +41,9 @@ public class Util {
 
     for (Element element : pokedexSelectBoxes) {
       String shortUrl = element.attr("value");
-      if (forLinksWithText == null || shortUrl.contains(forLinksWithText)) {
+      if ((forLinksWithText == null || shortUrl.contains(forLinksWithText))
+          && !containsText(shortUrl, excludeLinksWithText)) {
+
         if (!shortUrl.equals("#")) {
           String combinedUrl = Constants.serebiiHomePage + shortUrl;
           urls.add(combinedUrl);
@@ -49,6 +52,15 @@ public class Util {
     }
 
     return urls;
+  }
+
+
+  private static boolean containsText(String text, String... matches) {
+    for (String match : matches)
+      if (text.contains(match))
+        return true;
+
+    return false;
   }
 
   public static Elements selectDataRowTdsByPartOfTrHeading(Document document, String heading) {

@@ -92,7 +92,7 @@ public class TypeValueTest {
 
   @Test
   public void testFindCombinationThatResistsAttackTypes() {
-    List<Pair<TypeValue, TypeValue>> typesWhichResist = new OptimalTypeSearcher().findTypesWhichResist(TypeValue.grass, TypeValue.poison, TypeValue.ground);
+    List<Pair<TypeValue, TypeValue>> typesWhichResist = new OptimalTypeSearcher().findTypesWhichResist(TypeValue.poison, TypeValue.ground);
 
     System.out.println(typesWhichResist);
   }
