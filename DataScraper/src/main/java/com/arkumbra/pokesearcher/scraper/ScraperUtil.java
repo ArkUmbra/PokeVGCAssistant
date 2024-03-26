@@ -7,7 +7,6 @@ import org.jsoup.select.Elements;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -55,19 +54,16 @@ public class ScraperUtil {
   }
 
   public void parseSpecialMoves(Document doc, Moveset moveset) {
-//    Element specialMovesTable = doc.selectFirst("table.dextable:contains(Special Moves)");
     Element specialMovesTable = doc.selectFirst("table.dextable > thead > tr > td:contains(Special Moves)");
     if (specialMovesTable != null) {
       specialMovesTable = specialMovesTable.parent().parent().parent();
       parseSpecialMovesMoveset(moveset.getLevelUpMoves(), specialMovesTable, null);
-//      parseLevelOrTmMoveset(moveset.getLevelUpMoves(), specialMovesTable, MoveAcquireType.Distribution, null);
     }
   }
 
   public void parsePreEvolutionOnlyMoves(Document doc, Moveset moveset) {
     Element preEvoMovesTable = doc.selectFirst("table.dextable > tbody > tr > td:contains(Pre-Evolution Only Moves)");
 
-//    Element preEvoMovesTable = doc.selectFirst("table.dextable:contains(Pre-Evolution Only Moves)");
     if (preEvoMovesTable != null) {
       System.out.println("-- Pre evo moves found!! -- ");
       preEvoMovesTable = preEvoMovesTable.parent().parent().parent();
@@ -77,7 +73,7 @@ public class ScraperUtil {
 
   public void parsePreEvolutionOnlyMoves(Document doc, Moveset moveset, String formFilter, Supplier<Set<String>> preEvoNameSupplier) {
     Element preEvoMovesTable = doc.selectFirst("table.dextable > tbody > tr > td:contains(Pre-Evolution Only Moves)");
-//    Element preEvoMovesTable = doc.selectFirst("table.dextable:contains(Pre-Evolution Only Moves)");
+
     if (preEvoMovesTable != null) {
       System.out.println("-- Pre evo moves found!! -- ");
       preEvoMovesTable = preEvoMovesTable.parent().parent().parent();
@@ -210,7 +206,6 @@ public class ScraperUtil {
                                                String optionalFormMatchFilter, Set<String> optionalPreEvolutionNamesFilter) {
 
     Elements movesetsInfoTrs = dexTable.select("> tbody > tr");
-//    Elements movesetsInfoTrs = dexTable.select("tbody > tr");
 
     // Standard level up moves
     // 0 first row - heading (skip)
@@ -226,7 +221,6 @@ public class ScraperUtil {
       String[] splits = movePartialLink.split("/");
       String movename = splits[splits.length - 1].replaceAll(".shtml", "");
 
-//      Elements directTds = dataTr.select(" > td");
       List<String> formsThatCanAccessThisMove = dataTds.get(dataTds.size() - 1)
           .select("img").eachAttr("alt");
       if (dataTds.get(dataTds.size() - 1).select("img").size() > formsThatCanAccessThisMove.size()) {
@@ -256,28 +250,6 @@ public class ScraperUtil {
 
       if (formsThatCanAccessThisMove.stream().anyMatch(f -> matches.stream().noneMatch(f::startsWith)))
         continue;
-
-      // TODO needs a rework. Sometimes form filter is null, sometimes both that and preEvo filter are null
-//      if (optionalFormMatchFilter != null || optionalPreEvolutionNamesFilter == null) {
-//        Elements directTds = dataTr.select(" > td");
-//        List<String> formsThatCanAccessThisMove = directTds.get(directTds.size() - 1)
-//            .select("img").eachAttr("alt");
-
-
-//        String match = String.format("Learn as %s %s", optionalFormMatchFilter, optionalPreEvolutionNameFilter);
-//        System.out.println(formsThatCanAccessThisMove.toString() + " -> is match? [" + match + "]");
-//
-//         e.g. Learn as Alola Form Sandslash
-//        if (formsThatCanAccessThisMove.stream()
-//            .noneMatch(form -> {
-//              return optionalPreEvolutionNamesFilter.stream()
-//                  .noneMatch()
-//              form.startsWith(match)
-//            })
-//        )
-//          continue;
-//      }
-
 
       System.out.println(movename);
 

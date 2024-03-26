@@ -56,21 +56,6 @@ public class RegionalFormSpecificPokedexScraper extends MultiFormPokedexScraper 
   );
 
   private static final Map<String, Set<String>> pokemonIdToPreEvoNames = new HashMap<>();
-//  private static final Map<String, Set<String>> pokemonIdToPreEvoNames = Map.of(
-//      "sandslash", Set.of("Sandshrew"),
-//      "raichu", Set.of("Pikachu", "Pichu"),
-//      "ninetales", Set.of("Vulpix"),
-//      "golem", Set.of("Graveler", "Geodude"),
-//      "slowking", Set.of("Slowpoke"),
-//      "slowbro", Set.of("Slowpoke"),
-//      "samurott", Set.of("Dewott, Oshwawott"),
-//      "lilligant", Set.of("Petilil"),
-//      "zoroark", Set.of("Zorua"),
-//      "braviary", Set.of("Rufflet")
-//      "sliggoo", Set.of("Goomy")
-//      "goodra", Set.of("Sliggoo", "Goomy"),
-//      "decidueye", Set.of("Rowlett", "Dartrix")
-  //);
 
   static {
     pokemonIdToPreEvoNames.put("sandslash", Set.of("Sandshrew"));

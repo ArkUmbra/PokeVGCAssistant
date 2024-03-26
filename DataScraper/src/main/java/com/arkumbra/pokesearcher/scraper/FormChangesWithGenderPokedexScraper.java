@@ -3,7 +3,6 @@ package com.arkumbra.pokesearcher.scraper;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import java.io.IOException;
 import java.util.Set;
 
 public class FormChangesWithGenderPokedexScraper extends MultiFormPokedexScraper implements PokemonSpecificScraper {

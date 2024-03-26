@@ -108,27 +108,6 @@ public class BasculinSpecificPokedexScraper extends MultiFormPokedexScraper impl
     super.scraperUtil.parseSpecialMoves(doc, moveset);
     super.scraperUtil.parseEggMovesMoveset(doc, moveset, formName);
 
-    // For now, we just want the levels and move names. The full move/attack data will be scraped
-    // from https://www.serebii.net/attackdex-sv/ later
-
-    // Lots of variations on what text is displayed as a heading for the level up moves, so have to detect a bunch of stuff...
-//    String formName = pokemonFormNamesForLevelUpLookup.get(formOrder <= 1 ? 0 : 1);
-//    Element levelUpMovesTable = selectFirstExisting(doc, "table.dextable:contains(Level Up - " + formName + ")");
-//    parseLevelOrTmMoveset(moveset.getLevelUpMoves(), levelUpMovesTable);
-//
-//    formName = pokemonFormNamesForTmEggMoveLookup.get(formOrder);
-//    Element tmMovesTable = doc.selectFirst("table.dextable:contains(Technical Machine Attacks)");
-//    if (tmMovesTable != null) {
-//      Elements tmMovesTableSubHeadingTds = tmMovesTable.select("tbody > tr").get(1).select("th");
-//      parseLevelOrTmMoveset(moveset.getTmMoves(), tmMovesTable, formName);
-//    }
-
-    // Egg moves are seemingly the same regardless of form
-//    Element eggMovesTable = doc.selectFirst("table.dextable:contains(Egg Moves)");
-//    if (eggMovesTable != null) {
-//      parseEggMovesMoveset(moveset.getEggMoves(), eggMovesTable, formName);
-//    }
-
     return moveset;
   }
 
