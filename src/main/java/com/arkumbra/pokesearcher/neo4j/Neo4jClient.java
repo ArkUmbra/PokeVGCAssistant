@@ -99,10 +99,10 @@ public class Neo4jClient implements AutoCloseable {
 
     String linkToTypesQuery =
         """
-        UNWIND $typeList AS type
-          MATCH (t:TypeValue {label: type})
+        UNWIND range(0, size($typeList)-1) as i
+          MATCH (t:TypeValue {label: $typeList[i]})
           MATCH (pd:PokemonDetails {id:$qualifiedFormName})
-          MERGE (pd)-[:OF_TYPE]->(t)
+          MERGE (pd)-[:OF_TYPE{index: i}]->(t)
         """;
     var linkToTypesParams = parameters(
         "typeList", pokemonDetails.getTypes().stream().map(Enum::name).toList(),
@@ -480,8 +480,9 @@ public class Neo4jClient implements AutoCloseable {
                 MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
                 MATCH (pokemon)-[rDex:IN_DEX]->(dex:PokedexRegion{label:'National'})
                 MATCH (pokemon)-[:NAMED]->(name:Name)
-                MATCH (details)-[:OF_TYPE]->(type:TypeValue)
-                RETURN distinct(details.id), pokemon.id, rDex.num, name.english, name.japanese, form.formName, collect(type.label),
+                MATCH (details)-[t:OF_TYPE]->(type:TypeValue)
+                RETURN distinct(details.id), pokemon.id, rDex.num, name.english, name.japanese, form.formName, 
+                collect(type.label), collect(t.index), 
                 details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
                 ORDER BY rDex.num
                 """
@@ -497,20 +498,35 @@ public class Neo4jClient implements AutoCloseable {
         String englishName = summaryRecord.get(3).asString();
         String japaneseName = summaryRecord.get(4).asString();
         String formName = summaryRecord.get(5).asString();
-        List<TypeValue> types = summaryRecord.get(6).asList(rawType -> TypeValue.valueOf(rawType.asString()));
+        List<TypeValue> types = readTypeListInCorrectOrder(summaryRecord.get(6), summaryRecord.get(7));
 
         BaseStats baseStats = new BaseStats(
-            summaryRecord.get(7).asInt(),
             summaryRecord.get(8).asInt(),
             summaryRecord.get(9).asInt(),
             summaryRecord.get(10).asInt(),
             summaryRecord.get(11).asInt(),
-            summaryRecord.get(12).asInt()
+            summaryRecord.get(12).asInt(),
+            summaryRecord.get(13).asInt()
         );
 
         return new PokemonSummary(pokemonIdString, new Name(englishName, japaneseName), formName, types, baseStats, new PokedexNumber(nationalDexNum));
       }).collect(Collectors.toList());
     }
+  }
+
+  private List<TypeValue> readTypeListInCorrectOrder(Value typeLabels, Value typeIndices) {
+    List<TypeValue> unordered = typeLabels.asList(rawType -> TypeValue.valueOf(rawType.asString()));
+    List<Integer> indices = typeIndices.asList(Value::asInt);
+
+    List<TypeValue> ordered = new ArrayList<>(unordered.size());
+    unordered.forEach((unused) -> ordered.add(null));
+
+    for (int i = 0; i < typeIndices.size(); i++) {
+      int index = indices.get(i);
+      TypeValue value = unordered.get(i);
+      ordered.set(index, value);
+    }
+    return ordered;
   }
 
   public PokemonDetail getPokemonDetail(String pokemonId, String formName) {
@@ -528,8 +544,9 @@ public class Neo4jClient implements AutoCloseable {
               MATCH (details:PokemonDetails {id:$qualifiedPokemonId})
               MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
               MATCH (pokemon)-[:NAMED]->(name:Name)
-              MATCH (details)-[:OF_TYPE]->(type:TypeValue)
-              RETURN distinct(details.id), pokemon.id, name.english, name.japanese, collect(type.label),
+              MATCH (details)-[t:OF_TYPE]->(type:TypeValue)
+              RETURN distinct(details.id), pokemon.id, name.english, name.japanese, 
+              collect(type.label), collect(t.index),
               details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe
               """,
             parameters("qualifiedPokemonId", qualifiedPokemonId)
@@ -541,15 +558,15 @@ public class Neo4jClient implements AutoCloseable {
 //        String pokemonIdString = baseDetailResult.get(1).asString();
         String englishName = baseDetailResult.get(2).asString();
         String japaneseName = baseDetailResult.get(3).asString();
-        List<TypeValue> types = baseDetailResult.get(4).asList(rawType -> TypeValue.valueOf(rawType.asString()));
+        List<TypeValue> types = readTypeListInCorrectOrder(baseDetailResult.get(4), baseDetailResult.get(5));
 
         BaseStats baseStats = new BaseStats(
-            baseDetailResult.get(5).asInt(),
             baseDetailResult.get(6).asInt(),
             baseDetailResult.get(7).asInt(),
             baseDetailResult.get(8).asInt(),
             baseDetailResult.get(9).asInt(),
-            baseDetailResult.get(10).asInt()
+            baseDetailResult.get(10).asInt(),
+            baseDetailResult.get(11).asInt()
         );
 
         return new PokemonDetail(
