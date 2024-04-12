@@ -13,10 +13,19 @@
     <h2 th:text="${pokemonDetail.name.english + ' (' + pokemonDetail.name.japanese} + ')'" />
     <p th:text="${pokemonDetail.formName}" />
 
+    <picture>
+<!--        <img class="img-fixed icon-pkmn" src="https://img.pokemondb.net/sprites/scarlet-violet/icon/bulbasaur.png" alt="Bulbasaur" loading="lazy">-->
+<!--        <img src="https://img.pokemondb.net/sprites/scarlet-violet/normal/pecharunt.png" alt="Pecharunt">-->
+        <img th:src="@{'/images/sprites/' + ${pokemonDetail.name.english} + '.png'}"
 
-    <span th:each="type: ${pokemonDetail.types}">
-        <span th:replace="fragments/typeIcon :: ${type}" />
-    </span>
+        />
+    </picture>
+
+    <div>
+        <span th:each="type: ${pokemonDetail.types}">
+            <span th:replace="fragments/typeIcon :: ${type}" />
+        </span>
+    </div>
 
     <h3>Other Forms</h3>
     <div th:each="formSummary: ${pokemonDetail.otherForms.formNamesToFormId}">

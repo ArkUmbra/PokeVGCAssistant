@@ -18,7 +18,7 @@ public class MultiFormPokedexScraper extends SingleFormPokedexScraper {
   @Override
   protected Pokemon extractPokemonInfo(Document doc, Pokemon pokemon) {
     Elements formImages = getAlternateFormDexTable(doc).select("img");
-    List<String> pokemonFormNames = parseFormNamesFromFormDexTable(formImages);
+    List<String> pokemonFormNames = parseFormNamesFromFormDexTable(pokemon.getIdName(), formImages);
 
     // First form can also be considered 'Normal', so we can use that when searching for matching data
     Element abilityHeaderBlockTd = doc.select("tr:contains(Abilities:)").first(); // get header td
@@ -108,7 +108,7 @@ public class MultiFormPokedexScraper extends SingleFormPokedexScraper {
     return pokemon;
   }
 
-  protected List<String> parseFormNamesFromFormDexTable(Elements formImages) {
+  protected List<String> parseFormNamesFromFormDexTable(String pokemonId, Elements formImages) {
     return formImages.stream()
         // Sometimes there are other images like for items, etc, so try to only pick out the Pokemon
         .filter(formImg -> formImg.attribute("src").getValue().contains("/pokemon/"))
@@ -118,6 +118,7 @@ public class MultiFormPokedexScraper extends SingleFormPokedexScraper {
         // Some entries, (i.e. Basculegion) aren't consistent between the form name and alt text
         // In this case, we reduce 'Male Sprite' to 'Male'
         .map(formName -> formName.replace(" Sprite", ""))
+        .map(formName -> formName.toLowerCase().equals(pokemonId) ? "Default Form" : formName)
         .toList();
   }
 

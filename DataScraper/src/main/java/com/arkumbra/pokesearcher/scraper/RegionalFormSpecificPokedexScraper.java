@@ -89,9 +89,9 @@ public class RegionalFormSpecificPokedexScraper extends MultiFormPokedexScraper 
   }
 
   @Override
-  public List<String> parseFormNamesFromFormDexTable(Elements formImages) {
+  public List<String> parseFormNamesFromFormDexTable(String pokemonId, Elements formImages) {
     // Hook in here so we can keep track of the form names to use later
-    List<String> formNames = super.parseFormNamesFromFormDexTable(formImages);
+    List<String> formNames = super.parseFormNamesFromFormDexTable(pokemonId, formImages);
     this.formNames.set(formNames);
     return formNames;
   }
