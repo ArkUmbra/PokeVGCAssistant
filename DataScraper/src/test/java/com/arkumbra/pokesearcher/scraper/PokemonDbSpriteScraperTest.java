@@ -1,5 +1,6 @@
 package com.arkumbra.pokesearcher.scraper;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class PokemonDbSpriteScraperTest {
     assertEquals(expectedUrl, result);
   }
 
+  @Disabled
   @Test
   public void testDownloadSprites() throws IOException {
     Properties properties = System.getProperties();

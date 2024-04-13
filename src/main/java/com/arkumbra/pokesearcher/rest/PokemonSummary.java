@@ -13,19 +13,19 @@ public class PokemonSummary {
   private final String formName;
   private final Collection<TypeValue> types;
   private final BaseStats baseStats;
-  private PokedexNumber pokedexNumber;
+  private final int nationalDexNumber;
 
-  public PokemonSummary(String idName, Name name, String formName, Collection<TypeValue> types, BaseStats baseStats) {
+  public PokemonSummary(
+      String idName, Name name, String formName,
+      Collection<TypeValue> types, BaseStats baseStats,
+      int nationalDexNumber) {
+
     this.idName = idName;
     this.name = name;
     this.formName = formName;
     this.types = types;
     this.baseStats = baseStats;
-  }
-
-  public PokemonSummary(String idName, Name name, String formName, Collection<TypeValue> types, BaseStats baseStats, PokedexNumber pokedexNumber) {
-    this(idName, name, formName, types, baseStats);
-    this.pokedexNumber = pokedexNumber;
+    this.nationalDexNumber = nationalDexNumber;
   }
 
   public String getIdName() {
@@ -48,7 +48,7 @@ public class PokemonSummary {
     return baseStats;
   }
 
-  public PokedexNumber getPokedexNumber() {
-    return pokedexNumber;
+  public int getNationalDexNumber() {
+    return nationalDexNumber;
   }
 }

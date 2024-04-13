@@ -204,7 +204,7 @@ public class Neo4jClient implements AutoCloseable {
 
   private String buildQualifiedPokemonName(String idName, String formName) {
     return idName +
-        (formName == null || formName.equals("")  ? "" : "-" + formName);
+        (formName == null || formName.equals("") ? "" :  "-" + formName);
   }
 
   public void storeMove(Move move) {
@@ -422,14 +422,16 @@ public class Neo4jClient implements AutoCloseable {
         // Get Pokemon with this ability
         var pokemonWithAbilityQuery = new Query(
             """
-                MATCH (a:Ability {idString: $abilityId})
-                MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
-                MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
-                MATCH (pokemon)-[:NAMED]->(name:Name)
-                MATCH (details)-[:OF_TYPE]->(type:TypeValue)
-                RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form.formName, collect(type.label),
-                       details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe, pokemon.id
-               """,
+                 MATCH (a:Ability {idString: $abilityId})
+                 MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
+                 MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+                 MATCH (pokemon)-[rDex:IN_DEX]->(:PokedexRegion{label:'National'})
+                 MATCH (pokemon)-[:NAMED]->(name:Name)
+                 MATCH (details)-[:OF_TYPE]->(type:TypeValue)
+                 RETURN distinct(details.id), rAbility.category, name.english, name.japanese,form.formName, 
+                        collect(type.label), details.hp, details.atk, details.def, details.spAtk, details.spDef, 
+                        details.spe, pokemon.id, rDex.num
+                """,
             abilityParameters
         );
         Result matchingPokemon = tx.run(pokemonWithAbilityQuery);
@@ -457,7 +459,8 @@ public class Neo4jClient implements AutoCloseable {
               name,
               formName,
               types,
-              baseStats
+              baseStats,
+              pokemonResult.get(13).asInt()
           );
 
           if (isHiddenAbility)
@@ -509,7 +512,7 @@ public class Neo4jClient implements AutoCloseable {
             summaryRecord.get(13).asInt()
         );
 
-        return new PokemonSummary(pokemonIdString, new Name(englishName, japaneseName), formName, types, baseStats, new PokedexNumber(nationalDexNum));
+        return new PokemonSummary(pokemonIdString, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
       }).collect(Collectors.toList());
     }
   }
