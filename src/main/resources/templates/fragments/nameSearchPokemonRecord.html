@@ -1,16 +1,28 @@
-<div>
-    <span th:if="${#strings.isEmpty(record.formName)}">
-        <a th:href="@{/pokemon/{pokemonId}(pokemonId=${record.id})}">
-            <span th:text="${record.name.english}" />
-        </a>
-    </span>
-    <span th:unless="${#strings.isEmpty(record.formName)}">
-        <a th:href="@{/pokemon/{pokemonId}(pokemonId=${record.id}, formName=${record.formName})}">
-            <span th:text="${record.name.english + ' (' + record.formName + ')'}" />
-        </a>
-    </span>
+<div class="row">
+    <div style="width: 70px">
+        <picture>
+            <img width="70px" height="70px" style="margin-top: -20px; padding-right:5px" th:src="@{'/images/sprites/' + ${record.name.english} + '.png'}" />
+        </picture>
+    </div>
 
-    <span th:each="type: ${record.types}">
-        <div th:replace="~{fragments/typeIcon :: ${type}}" />
-    </span>
+    <div class="col-sm">
+        <div>
+            <div th:if="${#strings.isEmpty(record.formName)}">
+                <a th:href="@{/pokemon/{pokemonId}(pokemonId=${record.id})}">
+                    <span th:text="${record.name.english}" />
+                </a>
+            </div>
+            <div th:unless="${#strings.isEmpty(record.formName)}">
+                <a th:href="@{/pokemon/{pokemonId}(pokemonId=${record.id}, formName=${record.formName})}">
+                    <span th:text="${record.name.english + ' (' + record.formName + ')'}" />
+                </a>
+            </div>
+        </div>
+
+        <div>
+            <span th:each="type: ${record.types}">
+                <div th:replace="~{fragments/typeIcon :: ${type}}" />
+            </span>
+        </div>
+    </div>
 </div>

@@ -64,6 +64,8 @@ public class PokeSearcherController {
         new SearchByNameRequest(nameContains)
     );
 
+    System.out.println(response);
+
     model.addAttribute("result", response);
     return "search-by-name";
   }

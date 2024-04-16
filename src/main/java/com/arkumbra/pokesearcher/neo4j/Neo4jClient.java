@@ -9,6 +9,8 @@ import com.arkumbra.pokesearcher.scraper.*;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.StringValue;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -578,10 +580,13 @@ public class Neo4jClient implements AutoCloseable {
   }
 
   private List<TypeValue> readTypeListInCorrectOrder(Value typeLabels, Value typeIndices) {
-    List<TypeValue> unordered = typeLabels.asList(rawType -> TypeValue.valueOf(rawType.asString()));
+    List<TypeValue> unordered = typeLabels.asList(rawType -> {
+      return TypeValue.valueOf(rawType.asString());
+    });
 
-    if (typeIndices.isNull())
+    if (typeIndices.isEmpty()) {
       return unordered;
+    }
 
     List<Integer> indices = typeIndices.asList(Value::asInt);
 

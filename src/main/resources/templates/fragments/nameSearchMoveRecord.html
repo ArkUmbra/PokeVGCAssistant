@@ -1,0 +1,18 @@
+<div class="row">
+    <div class="col-sm">
+        <div>
+            <a th:href="@{/move/{id}(id=${record.id})}">
+                <span th:text="${record.name.english}" />
+            </a>
+        </div>
+
+        <span>
+<!--            <span th:replace="~{fragments/typeIcon :: ${record.type}}" />-->
+            <div th:replace="~{fragments/typeIcon :: ${record.type} }" />
+
+
+            <div th:text="${record.description}" />
+        </span>
+
+    </div>
+</div>

@@ -1,9 +1,9 @@
-<div>
+<div style="">
     <span>
         <a th:href="@{/ability/{id}(id=${record.id})}">
             <p th:text="${record.name.english}" />
         </a>
     </span>
 
-    <p th:text="${record.description}" />
+    <div th:text="${record.description}" />
 </div>
