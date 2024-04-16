@@ -1,15 +1,14 @@
 package com.arkumbra.pokesearcher.neo4j;
 
 import com.arkumbra.pokesearcher.controller.PokemonDetail;
+import com.arkumbra.pokesearcher.neo4j.search.*;
 import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.OtherFormsSummary;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
-import org.apache.logging.log4j.util.Strings;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -28,6 +27,64 @@ public class Neo4jClient implements AutoCloseable {
   @Override
   public void close() throws RuntimeException {
     driver.close();
+  }
+
+  public SearchByNameResponse searchAllElementsByName(SearchByNameRequest searchByNameRequest) {
+    /*
+    MATCH (n:Name) WHERE n.english contains "al"
+    MATCH (n)<-[rn:NAMED]-(something)
+    OPTIONAL MATCH (something)-[rf:WITH_FORM]->(f:PokemonDetails)
+    OPTIONAL MATCH (something)-[rt:OF_TYPE]->(tMove:TypeValue)
+    OPTIONAL MATCH (f)-[rtf:OF_TYPE]->(tPoke:TypeValue)
+    return labels(something),something.id, rf.formName, n.english, collect(tMove.label)+collect(tPoke.label), something.description
+     */
+
+    try (var session = driver.session()) {
+      String searchByNameQuery =
+          """
+          MATCH (n:Name) 
+            WHERE n.english contains $name 
+            OR n.japanese contains $name
+          MATCH (n)<-[rn:NAMED]-(something)
+          OPTIONAL MATCH (something)-[rf:WITH_FORM]->(f:PokemonDetails)
+          OPTIONAL MATCH (something)-[rt:OF_TYPE]->(tMove:TypeValue)
+          OPTIONAL MATCH (f)-[rtf:OF_TYPE]->(tPoke:TypeValue)
+          return labels(something), something.id, rf.formName, n.english, n.japanese,
+          collect(tMove.label)+collect(tPoke.label), collect(rtf.index), something.description
+          """;
+
+      var searchByNameParmas = parameters(
+        "name", searchByNameRequest.nameContains()
+      );
+
+      var responseRecords = session.executeWrite(tx -> {
+        return tx.run(searchByNameQuery, searchByNameParmas)
+            .stream().map((record) -> {
+//              String resultType = record.get(0).asString();
+              String resultType = record.get(0).asList(r -> r.asString()).get(0);
+              String id = record.get(1).asString();
+              String formName = record.get(2).asString();
+              Name name = new Name(record.get(3).asString(), record.get(4).asString());
+//              int typeIndex = record.get(6).asInt(-1); // Only present for Pokemon, not moves
+//              List<TypeValue> types = (typeIndex > 0) ?
+              List<TypeValue> types =
+                  readTypeListInCorrectOrder(record.get(5), record.get(6));
+//                  record.get(5).asList(type -> TypeValue.valueOf(type.asString()));
+              String description = record.get(7).asString();
+
+              switch(resultType) {
+                case "Pokemon": return new SearchByNameResponsePokemonRecord(id, name, formName, types);
+                case "Move": return new SearchByNameResponseMoveRecord(id, name, types.get(0), description);
+                case "Ability": return new SearchByNameResponseAbilityRecord(id, name, description);
+                default: throw new RuntimeException("Did not understand result type " + resultType);
+              }
+
+            }).collect(Collectors.toList());
+      });
+
+      return new SearchByNameResponse(responseRecords);
+    }
+
   }
 
   public void storePokemon(Pokemon pokemon) {
@@ -112,7 +169,7 @@ public class Neo4jClient implements AutoCloseable {
     String linkToStandardAbilityQuery =
         """
         UNWIND $abilityList AS ability
-          MATCH (a:Ability {idString: ability})
+          MATCH (a:Ability {id: ability})
           MATCH (pd:PokemonDetails {id:$qualifiedFormName})
           MERGE (pd)-[:WITH_ABILITY {category: 'regular'}]->(a)
         """;
@@ -131,7 +188,7 @@ public class Neo4jClient implements AutoCloseable {
     pokemonDetails.getAbilities().getHiddenAbilityNameId().ifPresent(hiddenAbility -> {
       String linkToHiddenAbilityQuery =
           """
-          MATCH (a:Ability {idString: $ability})
+          MATCH (a:Ability {id: $ability})
           MATCH (pd:PokemonDetails {id:$qualifiedFormName})
           MERGE (pd)-[:WITH_ABILITY {category: 'hidden'}]->(a)
           """;
@@ -266,7 +323,7 @@ public class Neo4jClient implements AutoCloseable {
 
       String createAbilityLinkName =
           "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
-          "MERGE (a:Ability {idString: $abilityId, description: $description, summary: $description}) \n" +
+          "MERGE (a:Ability {id: $abilityId, description: $description, summary: $description}) \n" +
           "MERGE (a)-[:NAMED]->(n)";
       var createAbilityLinkNameParams = parameters(
           "english", ability.getName().getEnglish(),
@@ -284,7 +341,7 @@ public class Neo4jClient implements AutoCloseable {
       // Find existing metadata node and link ability to that
       String linkAbilityToMetaData =
           "UNWIND $metadataList AS metadata\n" +
-              "MATCH (a:Ability {idString: $abilityId}) \n" +
+              "MATCH (a:Ability {id: $abilityId}) \n" +
               "MATCH (m:AbilityMetaData {label: metadata}) \n" +
               "MERGE (a)-[:WITH_ABILITY_BEHAVIOUR]->(m)";
       var linkAbilityToMetaDataParams = parameters(
@@ -370,7 +427,7 @@ public class Neo4jClient implements AutoCloseable {
                 MATCH (a)-[:NAMED]->(n:Name)
                 OPTIONAL MATCH (a)-[:WITH_ABILITY_BEHAVIOUR]->(m:AbilityMetaData)
                 OPTIONAL MATCH (a)<-[]-(pokemon:PokemonDetails)
-                RETURN a.idString, n.english, n.japanese, a.description, collect(m.label), count(pokemon)
+                RETURN a.id, n.english, n.japanese, a.description, collect(m.label), count(pokemon)
                 """
         );
         var result = tx.run(query);
@@ -378,14 +435,14 @@ public class Neo4jClient implements AutoCloseable {
       });
 
       List<AbilitySummary> abilities = allAbilities.stream().map(abilityRecord -> {
-        String idString = abilityRecord.values().get(0).asString();
+        String id = abilityRecord.values().get(0).asString();
         String englishName = abilityRecord.values().get(1).asString();
         String japaneseName = abilityRecord.values().get(2).asString();
         String description = abilityRecord.values().get(3).asString();
         List<AbilityMetaData> metaData = abilityRecord.values().get(4).asList(raw -> {
           return AbilityMetaData.valueOf(raw.asString());
         });
-        Ability ability = new Ability(idString, new Name(englishName, japaneseName), description, new HashSet<>(metaData));
+        Ability ability = new Ability(id, new Name(englishName, japaneseName), description, new HashSet<>(metaData));
         return new AbilitySummary(ability, abilityRecord.get(5).asInt());
       }).collect(Collectors.toList());
 
@@ -400,10 +457,10 @@ public class Neo4jClient implements AutoCloseable {
         // Get ability
         String abilityQuery =
             """
-            MATCH (a:Ability {idString: $abilityId})
+            MATCH (a:Ability {id: $abilityId})
             MATCH (a)-[]->(n:Name)
             OPTIONAL MATCH (a)-[]->(m:AbilityMetaData)
-            RETURN a.idString, n.english, n.japanese, a.description, collect(m.label)
+            RETURN a.id, n.english, n.japanese, a.description, collect(m.label)
             """;
         var abilityParameters = parameters("abilityId", abilityId);
 
@@ -422,7 +479,7 @@ public class Neo4jClient implements AutoCloseable {
         // Get Pokemon with this ability
         var pokemonWithAbilityQuery = new Query(
             """
-                 MATCH (a:Ability {idString: $abilityId})
+                 MATCH (a:Ability {id: $abilityId})
                  MATCH (details:PokemonDetails)-[rAbility:WITH_ABILITY]->(a)
                  MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
                  MATCH (pokemon)-[rDex:IN_DEX]->(:PokedexRegion{label:'National'})
@@ -496,7 +553,7 @@ public class Neo4jClient implements AutoCloseable {
 
       return allPokemon.stream().map(summaryRecord -> {
         // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
-        String pokemonIdString = summaryRecord.get(1).asString();
+        String pokemonId = summaryRecord.get(1).asString();
         Integer nationalDexNum = summaryRecord.get(2).asInt();
         String englishName = summaryRecord.get(3).asString();
         String japaneseName = summaryRecord.get(4).asString();
@@ -512,13 +569,17 @@ public class Neo4jClient implements AutoCloseable {
             summaryRecord.get(13).asInt()
         );
 
-        return new PokemonSummary(pokemonIdString, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
+        return new PokemonSummary(pokemonId, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
       }).collect(Collectors.toList());
     }
   }
 
   private List<TypeValue> readTypeListInCorrectOrder(Value typeLabels, Value typeIndices) {
     List<TypeValue> unordered = typeLabels.asList(rawType -> TypeValue.valueOf(rawType.asString()));
+
+    if (typeIndices.isNull())
+      return unordered;
+
     List<Integer> indices = typeIndices.asList(Value::asInt);
 
     List<TypeValue> ordered = new ArrayList<>(unordered.size());
@@ -640,7 +701,7 @@ public class Neo4jClient implements AutoCloseable {
         MATCH (details)-[r]->(a:Ability)
         MATCH (a)-[]->(n:Name)
         OPTIONAL MATCH (a)-[]->(m:AbilityMetaData)
-        return r.category, n.english, n.japanese, a.idString, a.description, collect(m.label);
+        return r.category, n.english, n.japanese, a.id, a.description, collect(m.label);
         """;
     var queryParams = parameters("qualifiedPokemonId", qualifiedPokemonId);
 
@@ -734,43 +795,6 @@ public class Neo4jClient implements AutoCloseable {
     });
 
   }
-
-
-  /*
-    TODO. Keep queries for later
-
-  - Finds any node with a Name node label containing selected text
-  MATCH (n:Name) WHERE n.english contains "eez"
-  MATCH (n)<-[rn:NAMED]-(something)
-  return n,something;
-
-  - Finds any node with a Name node label containing selected text
-  - Selects the type of the node if referenced directly, or via the PokemonDetails node if that is present
-  MATCH (n:Name) WHERE n.english contains "eez"
-  MATCH (n)<-[rn:NAMED]-(something)
-  OPTIONAL MATCH (something)-[rf:WITH_FORM]->(f:PokemonDetails)
-  OPTIONAL MATCH (something)-[rt:OF_TYPE]->(tMove:TypeValue)
-  OPTIONAL MATCH (f)-[rtf:OF_TYPE]->(tPoke:TypeValue)
-  return n.english,something, tMove.label, collect(tPoke.label), rf, f;
-
-  - Same as above, but merge the types, and add a label in the first column to show what sort of node it is
-  MATCH (n:Name) WHERE n.english contains "eez"
-  MATCH (n)<-[rn:NAMED]-(something)
-  OPTIONAL MATCH (something)-[rf:WITH_FORM]->(f:PokemonDetails)
-  OPTIONAL MATCH (something)-[rt:OF_TYPE]->(tMove:TypeValue)
-  OPTIONAL MATCH (f)-[rtf:OF_TYPE]->(tPoke:TypeValue)
-  return labels(something),n.english,something, collect(tMove.label)+collect(tPoke.label), rf, f;
-   */
-//  public String findElementByName(String englishName) {
-//    try (var session = driver.session()) {
-//      var allAbilities = session.executeWrite(tx -> {
-//        var query = new Query("MATCH (a:Ability) RETURN a");
-//        var result = tx.run(query);
-//        return result.list();
-//      });
-//      return allAbilities.size();
-//    }
-//  }
 
   public void initializeConstantEnumDataToDatabase() {
     storeSimpleEnum(AbilityMetaData.values(), "AbilityMetaData");

@@ -1,5 +1,7 @@
 package com.arkumbra.pokesearcher.neo4j;
 
+import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
+import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
 import com.arkumbra.pokesearcher.scraper.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -180,6 +182,18 @@ public class Neo4jClientTest {
   @Test
   public void testGetAbilities() {
     neo4jClient.getAllAbilities();
+  }
+
+  @Test
+  public void testSearchAllElementsByNameInEnglish() {
+    SearchByNameResponse results = neo4jClient.searchAllElementsByName(new SearchByNameRequest("alk"));
+    System.out.println(results);
+  }
+
+  @Test
+  public void testSearchAllElementsByNameInJapanese() {
+    SearchByNameResponse results = neo4jClient.searchAllElementsByName(new SearchByNameRequest("から"));
+    System.out.println(results);
   }
 
 }

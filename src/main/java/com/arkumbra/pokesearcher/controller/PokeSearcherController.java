@@ -1,6 +1,8 @@
 package com.arkumbra.pokesearcher.controller;
 
 import com.arkumbra.pokesearcher.neo4j.Neo4jClient;
+import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
+import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
 import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.Ability;
@@ -54,5 +56,15 @@ public class PokeSearcherController {
     PokemonDetail abilityDetail = neo4jClient.getPokemonDetail(pokemonId, formName);
     model.addAttribute("pokemonDetail", abilityDetail);
     return "pokemon-detail";
+  }
+
+  @GetMapping("/search/{nameContains}")
+  public String searchByName(Model model, @PathVariable("nameContains") String nameContains) {
+    SearchByNameResponse response = neo4jClient.searchAllElementsByName(
+        new SearchByNameRequest(nameContains)
+    );
+
+    model.addAttribute("result", response);
+    return "search-by-name";
   }
 }
