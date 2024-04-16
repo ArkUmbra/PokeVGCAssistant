@@ -41,6 +41,10 @@ public class SearchByNameResponsePokemonRecord implements SearchByNameResponseRe
     return types;
   }
 
+  public String getFormName() {
+    return formName;
+  }
+
   @Override
   public String toString() {
     return "SearchByNameResponsePokemonRecord{" +

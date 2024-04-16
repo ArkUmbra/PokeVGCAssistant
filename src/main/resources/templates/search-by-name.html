@@ -9,7 +9,21 @@
 <body>
 
     <div th:each="record: ${result.records}">
-        <p th:text="${record.toString}" />
+        <th:block th:switch="${record.searchRecordType.category}">
+            <div th:case="0">
+                Move
+                <!-- print object is not active -->
+            </div>
+            <div th:case="1">
+
+                <div th:replace="fragments/nameSearchPokemonRecord" />
+            </div>
+            <div th:case="2">
+                <div th:replace="fragments/nameSearchAbilityRecord" />
+            </div>
+        </th:block>
+
+
     </div>
 </table>
 

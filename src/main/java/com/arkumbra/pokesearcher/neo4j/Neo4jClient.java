@@ -43,7 +43,7 @@ public class Neo4jClient implements AutoCloseable {
       String searchByNameQuery =
           """
           MATCH (n:Name) 
-            WHERE n.english contains $name 
+            WHERE n.englishLower contains $name 
             OR n.japanese contains $name
           MATCH (n)<-[rn:NAMED]-(something)
           OPTIONAL MATCH (something)-[rf:WITH_FORM]->(f:PokemonDetails)
@@ -54,7 +54,7 @@ public class Neo4jClient implements AutoCloseable {
           """;
 
       var searchByNameParmas = parameters(
-        "name", searchByNameRequest.nameContains()
+        "name", searchByNameRequest.nameContains().toLowerCase()
       );
 
       var responseRecords = session.executeWrite(tx -> {
@@ -90,11 +90,12 @@ public class Neo4jClient implements AutoCloseable {
   public void storePokemon(Pokemon pokemon) {
     try (var session = driver.session()) {
       String createPokemonQuery =
-          "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
+          "MERGE (n:Name {english:$english, englishLower:$englishLower, japanese:$japanese}) \n" +
           "MERGE (p:Pokemon {id:$idName}) \n" +
           "MERGE (p)-[:NAMED]->(n) \n";
       var createPokemonParams = parameters(
           "english", pokemon.getName().getEnglish(),
+          "englishLower", pokemon.getName().getEnglish().toLowerCase(),
           "japanese", nullToBlank(pokemon.getName().getJapanese()),
           "idName", pokemon.getIdName()
       );
@@ -271,7 +272,7 @@ public class Neo4jClient implements AutoCloseable {
           "MATCH (ac:AttackCategory {label:$attackCategory}) \n" +
           "MATCH (pr:Priority {label:$priority}) \n" +
           "MATCH (mt:MoveTarget {label:$moveTarget}) \n" +
-          "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
+          "MERGE (n:Name {english:$english, englishLower:$englishLower, japanese:$japanese}) \n" +
           "MERGE (m:Move {id:$moveId, summary:$summary, accuracy:$accuracy, description:$description, pp:$pp, power:$power, critRatio:$critRatio, effectChance:$effectChance}) \n" +
           "MERGE (m)-[:NAMED]->(n) \n" +
           "MERGE (m)-[:TARGETS]->(mt) \n" +
@@ -284,6 +285,7 @@ public class Neo4jClient implements AutoCloseable {
           "priority", move.getPriority().name(),
           "moveTarget", move.getMoveTarget().name(),
           "english", move.getName().getEnglish(),
+          "englishLower", move.getName().getEnglish().toLowerCase(),
           "japanese", nullToBlank(move.getName().getJapanese()),
           "moveId", nullToBlank(move.getIdName()),
           "accuracy", move.getAccuracy(),
@@ -322,11 +324,12 @@ public class Neo4jClient implements AutoCloseable {
     try (var session = driver.session()) {
 
       String createAbilityLinkName =
-          "MERGE (n:Name {english:$english, japanese:$japanese}) \n" +
+          "MERGE (n:Name {english:$english, englishLower:$englishLower, japanese:$japanese}) \n" +
           "MERGE (a:Ability {id: $abilityId, description: $description, summary: $description}) \n" +
           "MERGE (a)-[:NAMED]->(n)";
       var createAbilityLinkNameParams = parameters(
           "english", ability.getName().getEnglish(),
+          "englishLower", ability.getName().getEnglish().toLowerCase(),
           "japanese", nullToBlank(ability.getName().getJapanese()),
           "abilityId", ability.getIdName(),
           "description", ability.getIngameDescription()
