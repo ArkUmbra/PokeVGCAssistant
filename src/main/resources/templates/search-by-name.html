@@ -9,6 +9,10 @@
 <body>
     <div class="container-sm">
 
+        <div th:if="${result.records.isEmpty()}" style="padding:10px; margin-bottom: 10px; background-color:rgb(30, 30, 40)">
+            No results!
+        </div>
+
         <div th:each="record: ${result.records}" style="padding:10px; margin-bottom: 10px; background-color:rgb(30, 30, 40)">
             <th:block th:switch="${record.searchRecordType.category}">
                 <div th:case="0">

@@ -1,5 +1,6 @@
 package com.arkumbra.pokesearcher.controller;
 
+import com.arkumbra.pokesearcher.neo4j.MoveDetail;
 import com.arkumbra.pokesearcher.neo4j.Neo4jClient;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
@@ -25,9 +26,6 @@ public class PokeSearcherController {
 
   @GetMapping("/ability")
   public String getAllAbilities(Model model) {
-    System.out.println("Reached controller");
-//    model.addAttribute("test", "Hello world");
-
     List<AbilitySummary> allAbilities = neo4jClient.getAllAbilities();
     model.addAttribute("numOfAbilities", allAbilities.size());
     model.addAttribute("abilitySummaries", allAbilities);
@@ -39,6 +37,21 @@ public class PokeSearcherController {
     AbilityDetail abilityDetail = neo4jClient.getAbilityDetail(abilityId);
     model.addAttribute("abilityDetail", abilityDetail);
     return "abilities-detail";
+  }
+
+//  @GetMapping("/move")
+//  public String getAllMoves(Model model) {
+//    List<MoveSummary> allMoves = neo4jClient.getallMoves();
+//    model.addAttribute("numOfMoves", allMoves.size());
+//    model.addAttribute("moveSummaries", allMoves);
+//    return "moves-overview";
+//  }
+//
+  @GetMapping("/move/{moveId}")
+  public String getMoveDetail(Model model, @PathVariable("moveId") String moveId) {
+    MoveDetail moveDetail = neo4jClient.getMoveDetail(moveId);
+    model.addAttribute("moveDetail", moveDetail);
+    return "move-detail";
   }
 
   @GetMapping("/pokemon")

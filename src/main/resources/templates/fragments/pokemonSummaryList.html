@@ -1,4 +1,4 @@
-<table>
+<table class="table-sm">
     <tr>
         <td>Name</td>
         <td>Pokedex #</td>
@@ -13,6 +13,10 @@
     </tr>
     <tr th:each="summary: ${pokemonSummaries}">
         <td>
+            <picture>
+                <img width="40px" height="40px" style="margin-top: -10px; padding-right:5px" th:src="@{'/images/sprites/' + ${summary.name.english} + '.png'}" />
+            </picture>
+
             <span th:if="${#strings.isEmpty(summary.formName)}">
                 <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName})}">
                     <span th:text="${summary.name.english}" />

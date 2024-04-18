@@ -804,6 +804,47 @@ public class Neo4jClient implements AutoCloseable {
 
   }
 
+  public MoveDetail getMoveDetail(String moveId) {
+    String queryString =
+        """
+            MATCH (details)-[r]->(m:Move {id:$moveId})
+            MATCH (m)-[]->(n:Name)
+            MATCH (m)-[]->(type:TypeValue)
+            MATCH (m)-[]->(t:MoveTarget)
+            MATCH (m)-[]->(p:Priority)
+            MATCH (m)-[]->(c:AttackCategory)
+            OPTIONAL MATCH (m)-[]->(meta:AttackMetaData)
+            return type(r), r.acquire, n.english, n.japanese, m.description, m.power, m.pp, m.accuracy, 
+            m.effectChance, m.critRatio, t.label, p.label, c.label, m.id, type.label, collect(meta.label)
+            """;
+    var queryParams = parameters("moveId", moveId);
+
+    try (var session = driver.session()) {
+      return session.executeWrite(tx -> {
+        Record record = tx.run(queryString, queryParams).single();
+
+        String englishName = record.get(2).asString();
+        String japaneseName = record.get(3).asString();
+        String description = record.get(4).asString();
+        int power = record.get(5).asInt(-1);
+        int pp = record.get(6).asInt(-1);
+        int accuracy = record.get(7).asInt(-1);
+        EffectChance effectChance = new EffectChance(record.get(8).asInt());
+        BigDecimal critRatio = new BigDecimal(record.get(9).asString());
+        MoveTarget target = MoveTarget.valueOf(record.get(10).asString());
+        Priority priority = Priority.valueOf(record.get(11).asString());
+        AttackCategory attackCategory = AttackCategory.valueOf(record.get(12).asString());
+        TypeValue typeValue = TypeValue.valueOf(record.get(14).asString());
+        Set<AttackMetaData> metaData = new HashSet<>(record.get(15).asList(r -> AttackMetaData.valueOf(r.asString())));
+
+        Move move = new Move(moveId, new Name(englishName, japaneseName), typeValue, attackCategory, pp, power,
+            accuracy, description, critRatio, priority, effectChance, target, metaData);
+
+        return new MoveDetail(move);
+      });
+    }
+  }
+
   public void initializeConstantEnumDataToDatabase() {
     storeSimpleEnum(AbilityMetaData.values(), "AbilityMetaData");
     storeSimpleEnum(TypeValue.values(), "TypeValue");

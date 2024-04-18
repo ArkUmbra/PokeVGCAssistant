@@ -7,146 +7,181 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </head>
-<body class="container">
+<body class="container-sm">
     <a href="/pokemon">View all Pokemon</a>
 
-    <h2 th:text="${pokemonDetail.name.english + ' (' + pokemonDetail.name.japanese} + ')'" />
-    <p th:text="${pokemonDetail.formName}" />
 
-    <picture>
-        <img th:src="@{'/images/sprites/' + ${pokemonDetail.name.english} + '.png'}" />
-    </picture>
+    <ul class="nav nav-tabs" id="pokemonTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab" aria-controls="home" aria-selected="true">Stats</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="moveset-tab" data-bs-toggle="tab" data-bs-target="#moveset" type="button" role="tab" aria-controls="profile" aria-selected="false">Moveset</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage" type="button" role="tab" aria-controls="contact" aria-selected="false">Usage</button>
+        </li>
+    </ul>
 
-    <div>
-        <span th:each="type: ${pokemonDetail.types}">
-            <span th:replace="~{fragments/typeIcon :: ${type}}" />
-        </span>
+    <div class="tab-content" id="pokemonTabContent">
+        <div class="tab-pane fade show active" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+
+            <h2 th:text="${pokemonDetail.name.english + ' (' + pokemonDetail.name.japanese} + ')'" />
+            <p th:text="${pokemonDetail.formName}" />
+
+
+            <div th:if="${!pokemonDetail.otherForms.formNamesToFormId.isEmpty()}">
+
+                <h3>Other Forms</h3>
+                <div th:each="formSummary: ${pokemonDetail.otherForms.formNamesToFormId}">
+                    <a th:href="@{/pokemon/{pokemonId}(pokemonId=${pokemonDetail.pokemonId}, formName=${formSummary.left})}">
+                        <div th:text="${formSummary.left}" />
+                    </a>
+                </div>
+            </div>
+
+
+            <picture>
+                <img th:src="@{'/images/sprites/' + ${pokemonDetail.name.english} + '.png'}" />
+            </picture>
+
+            <div>
+                <span th:each="type: ${pokemonDetail.types}">
+                    <span th:replace="~{fragments/typeIcon :: ${type}}" />
+                </span>
+            </div>
+
+            <h3>Base Stats</h3>
+
+            <table>
+                <tr>
+                    <td>Base Stat Total</td>
+                    <td>HP</td>
+                    <td>Atk</td>
+                    <td>Def</td>
+                    <td>SpAtk</td>
+                    <td>SpDef</td>
+                    <td>Speed</td>
+                </tr>
+                <tr>
+                    <td th:text="${pokemonDetail.baseStats.total}" />
+                    <td th:text="${pokemonDetail.baseStats.hp}" />
+                    <td th:text="${pokemonDetail.baseStats.atk}" />
+                    <td th:text="${pokemonDetail.baseStats.def}" />
+                    <td th:text="${pokemonDetail.baseStats.specialAtk}" />
+                    <td th:text="${pokemonDetail.baseStats.specialDef}" />
+                    <td th:text="${pokemonDetail.baseStats.speed}" />
+                </tr>
+            </table>
+
+
+            <h3>Abilities</h3>
+
+            <table>
+                <tr>
+                    <td>Ability</td>
+                    <td>Category</td>
+                    <td>Description</td>
+                </tr>
+
+                <tr th:each="ability: ${pokemonDetail.abilities.standardAbilities}">
+                    <td>
+                        <a th:href="@{/ability/{id}(id=${ability.idName})}">
+                            <p th:text="${ability.name.english}" />
+                        </a>
+                    </td>
+                    <td>Standard</td>
+                    <td th:text="${ability.ingameDescription}" />
+                </tr>
+
+                <tr th:if="${pokemonDetail.abilities.hiddenAbility}">
+                    <td>
+                        <a th:href="@{/ability/{id}(id=${pokemonDetail.abilities.hiddenAbility.idName})}">
+                            <p th:text="${pokemonDetail.abilities.hiddenAbility.name.english}" />
+                        </a>
+                    </td>
+                    <td>Hidden</td>
+                    <td th:text="${pokemonDetail.abilities.hiddenAbility.ingameDescription}" />
+                </tr>
+
+            </table>
+
+        </div>
+        <div class="tab-pane fade" id="moveset" role="tabpanel" aria-labelledby="moveset-tab">
+
+            <h3>Movepool</h3>
+
+            <table class="table-sm">
+                <tr>
+                    <td>Acquire</td>
+                    <td>Name</td>
+                    <td>Type</td>
+                    <td>Category</td>
+                    <td>Power</td>
+                    <td>PP</td>
+                    <td>Accuracy</td>
+                    <td>Priority</td>
+                    <td>Target</td>
+                </tr>
+                <tr th:each="move: ${pokemonDetail.moveset.levelUpMoves}">
+                    <td th:text="${move.left}" />
+                    <td>
+                        <a th:href="@{/move/{id}(id=${move.right.idName})}">
+                            <span th:text="${move.right.name.english}" />
+                        </a>
+                    </td>
+                    <td  />
+                    <td>
+                        <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
+                    </td>
+                    <td>
+                        <div th:replace="~{fragments/moveCategory :: ${move.right.category}}" />
+                    </td>
+                    <td th:text="${move.right.power}" />
+                    <td th:text="${move.right.pp}" />
+                    <td th:text="${move.right.accuracy}" />
+                    <td th:text="${move.right.priority}" />
+                    <td th:text="${move.right.moveTarget}" />
+                </tr>
+                <tr th:each="move: ${pokemonDetail.moveset.tmMoves}">
+                    <td th:text="${move.left}" />
+                    <td th:text="${move.right.name.english}" />
+                    <td>
+                        <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
+                    </td>
+                    <td>
+                        <div th:replace="~{fragments/moveCategory :: ${move.right.category}}" />
+                    </td>
+                    <td th:text="${move.right.power}" />
+                    <td th:text="${move.right.pp}" />
+                    <td th:text="${move.right.accuracy}" />
+                    <td th:text="${move.right.priority}" />
+                    <td th:text="${move.right.moveTarget}" />
+                </tr>
+                <tr th:each="move: ${pokemonDetail.moveset.eggMoves}">
+                    <td>Egg Move</td>
+                    <td th:text="${move.name.english}" />
+                    <td>
+                        <div th:replace="~{fragments/typeIcon :: ${move.type}}" />
+                    </td>
+                    <td>
+                        <div th:replace="~{fragments/moveCategory :: ${move.category}}" />
+                    </td>
+                    <td th:text="${move.power}" />
+                    <td th:text="${move.pp}" />
+                    <td th:text="${move.accuracy}" />
+                    <td th:text="${move.priority}" />
+                    <td th:text="${move.moveTarget}" />
+                </tr>
+            </table>
+
+        </div>
+        <div class="tab-pane fade" id="usage" role="tabpanel" aria-labelledby="usage-tab">
+            No usage information yet...
+        </div>
     </div>
 
-    <h3>Other Forms</h3>
-    <div th:each="formSummary: ${pokemonDetail.otherForms.formNamesToFormId}">
-        <a th:href="@{/pokemon/{pokemonId}(pokemonId=${pokemonDetail.pokemonId}, formName=${formSummary.left})}">
-            <span th:text="${formSummary.left}" />
-        </a>
-    </div>
 
-
-    <h3>Base Stats</h3>
-
-    <table>
-        <tr>
-            <td>Base Stat Total</td>
-            <td>HP</td>
-            <td>Atk</td>
-            <td>Def</td>
-            <td>SpAtk</td>
-            <td>SpDef</td>
-            <td>Speed</td>
-        </tr>
-        <tr>
-            <td th:text="${pokemonDetail.baseStats.total}" />
-            <td th:text="${pokemonDetail.baseStats.hp}" />
-            <td th:text="${pokemonDetail.baseStats.atk}" />
-            <td th:text="${pokemonDetail.baseStats.def}" />
-            <td th:text="${pokemonDetail.baseStats.specialAtk}" />
-            <td th:text="${pokemonDetail.baseStats.specialDef}" />
-            <td th:text="${pokemonDetail.baseStats.speed}" />
-        </tr>
-    </table>
-
-
-    <h3>Abilities</h3>
-
-    <table>
-        <tr>
-            <td>Ability</td>
-            <td>Category</td>
-            <td>Description</td>
-        </tr>
-
-        <tr th:each="ability: ${pokemonDetail.abilities.standardAbilities}">
-            <td>
-                <a th:href="@{/ability/{id}(id=${ability.idName})}">
-                    <p th:text="${ability.name.english}" />
-                </a>
-            </td>
-            <td>Standard</td>
-            <td th:text="${ability.ingameDescription}" />
-        </tr>
-
-        <tr th:if="${pokemonDetail.abilities.hiddenAbility}">
-            <td>
-                <a th:href="@{/ability/{id}(id=${pokemonDetail.abilities.hiddenAbility.idName})}">
-                    <p th:text="${pokemonDetail.abilities.hiddenAbility.name.english}" />
-                </a>
-            </td>
-            <td>Hidden</td>
-            <td th:text="${pokemonDetail.abilities.hiddenAbility.ingameDescription}" />
-        </tr>
-
-
-    </table>
-
-    <h3>Moveset</h3>
-
-    <table>
-        <tr>
-            <td>Acquire</td>
-            <td>Name</td>
-            <td>Type</td>
-            <td>Category</td>
-            <td>Power</td>
-            <td>PP</td>
-            <td>Accuracy</td>
-            <td>Priority</td>
-            <td>Target</td>
-        </tr>
-        <tr th:each="move: ${pokemonDetail.moveset.levelUpMoves}">
-            <td th:text="${move.left}" />
-            <td th:text="${move.right.name.english}" />
-            <td>
-                <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
-            </td>
-            <td>
-                <div th:replace="~{fragments/moveCategory :: ${move.right.category}}" />
-            </td>
-            <td th:text="${move.right.power}" />
-            <td th:text="${move.right.pp}" />
-            <td th:text="${move.right.accuracy}" />
-            <td th:text="${move.right.priority}" />
-            <td th:text="${move.right.moveTarget}" />
-        </tr>
-        <tr th:each="move: ${pokemonDetail.moveset.tmMoves}">
-            <td th:text="${move.left}" />
-            <td th:text="${move.right.name.english}" />
-            <td>
-                <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
-            </td>
-            <td>
-                <div th:replace="~{fragments/moveCategory :: ${move.right.category}}" />
-            </td>
-            <td th:text="${move.right.power}" />
-            <td th:text="${move.right.pp}" />
-            <td th:text="${move.right.accuracy}" />
-            <td th:text="${move.right.priority}" />
-            <td th:text="${move.right.moveTarget}" />
-        </tr>
-        <tr th:each="move: ${pokemonDetail.moveset.eggMoves}">
-            <td>Egg Move</td>
-            <td th:text="${move.name.english}" />
-            <td>
-                <div th:replace="~{fragments/typeIcon :: ${move.type}}" />
-            </td>
-            <td>
-                <div th:replace="~{fragments/moveCategory :: ${move.category}}" />
-            </td>
-            <td th:text="${move.power}" />
-            <td th:text="${move.pp}" />
-            <td th:text="${move.accuracy}" />
-            <td th:text="${move.priority}" />
-            <td th:text="${move.moveTarget}" />
-        </tr>
-    </table>
 
 </body>
 </html>
