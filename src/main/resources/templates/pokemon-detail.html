@@ -130,7 +130,6 @@
                             <span th:text="${move.right.name.english}" />
                         </a>
                     </td>
-                    <td  />
                     <td>
                         <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
                     </td>
@@ -140,12 +139,16 @@
                     <td th:text="${move.right.power}" />
                     <td th:text="${move.right.pp}" />
                     <td th:text="${move.right.accuracy}" />
-                    <td th:text="${move.right.priority}" />
+                    <td th:text="${move.right.priority.namedValue}" />
                     <td th:text="${move.right.moveTarget}" />
                 </tr>
                 <tr th:each="move: ${pokemonDetail.moveset.tmMoves}">
                     <td th:text="${move.left}" />
-                    <td th:text="${move.right.name.english}" />
+                    <td>
+                        <a th:href="@{/move/{id}(id=${move.right.idName})}">
+                            <span th:text="${move.right.name.english}" />
+                        </a>
+                    </td>
                     <td>
                         <div th:replace="~{fragments/typeIcon :: ${move.right.type}}" />
                     </td>
@@ -155,12 +158,16 @@
                     <td th:text="${move.right.power}" />
                     <td th:text="${move.right.pp}" />
                     <td th:text="${move.right.accuracy}" />
-                    <td th:text="${move.right.priority}" />
+                    <td th:text="${move.right.priority.namedValue}" />
                     <td th:text="${move.right.moveTarget}" />
                 </tr>
                 <tr th:each="move: ${pokemonDetail.moveset.eggMoves}">
                     <td>Egg Move</td>
-                    <td th:text="${move.name.english}" />
+                    <td>
+                        <a th:href="@{/move/{id}(id=${move.idName})}">
+                            <span th:text="${move.name.english}" />
+                        </a>
+                    </td>
                     <td>
                         <div th:replace="~{fragments/typeIcon :: ${move.type}}" />
                     </td>
@@ -170,7 +177,7 @@
                     <td th:text="${move.power}" />
                     <td th:text="${move.pp}" />
                     <td th:text="${move.accuracy}" />
-                    <td th:text="${move.priority}" />
+                    <td th:text="${move.priority.namedValue}" />
                     <td th:text="${move.moveTarget}" />
                 </tr>
             </table>

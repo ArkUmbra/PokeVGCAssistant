@@ -30,4 +30,18 @@ public enum Priority {
 
     throw new RuntimeException("Unsupported priority value provided [" + value + "]");
   }
+
+  public int getPriority() {
+    return priority;
+  }
+
+  public String namedValue() {
+    if (priority == 0) {
+      return this.name();
+    } else if (priority < 0) {
+      return "" + priority;
+    } else {
+      return "+" + priority;
+    }
+  }
 }

@@ -19,12 +19,12 @@
 
             <span th:if="${#strings.isEmpty(summary.formName)}">
                 <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName})}">
-                    <span th:text="${summary.name.english}" />
+                    <span th:text="${summary.name.english + ' (' + summary.name.japanese + ')'}" />
                 </a>
             </span>
             <span th:unless="${#strings.isEmpty(summary.formName)}">
                 <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName}, formName=${summary.formName})}">
-                    <span th:text="${summary.name.english + ' (' + summary.formName + ')'}" />
+                    <span th:text="${summary.name.english + ' (' + summary.name.japanese + ') [' + summary.formName + ']'}" />
                 </a>
             </span>
         </td>

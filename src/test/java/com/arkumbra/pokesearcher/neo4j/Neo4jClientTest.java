@@ -3,12 +3,14 @@ package com.arkumbra.pokesearcher.neo4j;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
 import com.arkumbra.pokesearcher.scraper.*;
+import com.arkumbra.pokesearcher.scraper.pokemon.PokemonCoJpScraper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -194,6 +196,24 @@ public class Neo4jClientTest {
   public void testSearchAllElementsByNameInJapanese() {
     SearchByNameResponse results = neo4jClient.searchAllElementsByName(new SearchByNameRequest("から"));
     System.out.println(results);
+  }
+
+  @Test
+  public void scrapeAndStoreJapaneseNamesForAllPokemonInDb() {
+    PokemonCoJpScraper pokemonCoJpScraper = new PokemonCoJpScraper();
+
+    Map<String, String> engToJpn = new HashMap<>();
+
+    neo4jClient.getAllPokemon()
+        .stream()
+        .forEach(pokemonSummary -> {
+          System.out.println(pokemonSummary.getName().getEnglish());
+          String jpnName = pokemonCoJpScraper.getJapaneseNameForPokemon(pokemonSummary.getNationalDexNumber());
+          engToJpn.put(pokemonSummary.getName().getEnglish(), jpnName);
+          System.out.println(jpnName);
+        });
+
+    neo4jClient.writeJapaneseName(engToJpn);
   }
 
 }
