@@ -84,6 +84,12 @@
 </div>
 
 
+<div th:with="pokemonSummaries=${moveDetail.pokemonWithMove}" style="margin-top: 25px">
+    <h3>Pokemon With This Move</h3>
+
+    <div th:replace="fragments/pokemonSummaryList" />
+</div>
+
 
 </body>
 </html>

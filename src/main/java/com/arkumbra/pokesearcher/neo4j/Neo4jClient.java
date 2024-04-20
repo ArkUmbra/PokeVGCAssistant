@@ -819,8 +819,26 @@ public class Neo4jClient implements AutoCloseable {
             """;
     var queryParams = parameters("moveId", moveId);
 
+    var pokemonWithMoveQuery = new Query(
+        """
+             MATCH (m:Move {id: $moveId})
+             MATCH (details:PokemonDetails)-[]->(m)
+             MATCH (pokemon:Pokemon)-[form:WITH_FORM]->(details)
+             MATCH (pokemon)-[rDex:IN_DEX]->(:PokedexRegion{label:'National'})
+             MATCH (pokemon)-[:NAMED]->(name:Name)
+             MATCH (details)-[rtf:OF_TYPE]->(type:TypeValue)
+             RETURN distinct(details.id), name.english, name.japanese, form.formName, collect(type.label), collect(rtf.index),
+                  details.hp, details.atk, details.def, details.spAtk, details.spDef,
+                  details.spe, rDex.num
+             ORDER BY rDex.num
+            """,
+        queryParams
+    );
+
     try (var session = driver.session()) {
       return session.executeWrite(tx -> {
+
+        // Move details
         Record record = tx.run(queryString, queryParams).single();
 
         String englishName = record.get(0).asString();
@@ -840,7 +858,37 @@ public class Neo4jClient implements AutoCloseable {
         Move move = new Move(moveId, new Name(englishName, japaneseName), typeValue, attackCategory, pp, power,
             accuracy, description, critRatio, priority, effectChance, target, metaData);
 
-        return new MoveDetail(move);
+        // Pokemon with this move
+        List<Record> records = tx.run(pokemonWithMoveQuery).list();
+        List<PokemonSummary> pokemonSummaries = records.stream().map(pokemonResult -> {
+          String id = pokemonResult.get(0).asString();
+          Name name = new Name(
+              pokemonResult.get(1).asString(),
+              pokemonResult.get(2).asString()
+          );
+          String formName = pokemonResult.get(3).asString();
+          List<TypeValue> types = readTypeListInCorrectOrder(pokemonResult.get(4), pokemonResult.get(5));
+          BaseStats baseStats = new BaseStats(
+              pokemonResult.get(6).asInt(),
+              pokemonResult.get(7).asInt(),
+              pokemonResult.get(8).asInt(),
+              pokemonResult.get(9).asInt(),
+              pokemonResult.get(10).asInt(),
+              pokemonResult.get(11).asInt()
+          );
+
+          return new PokemonSummary(
+              id,
+              name,
+              formName,
+              types,
+              baseStats,
+              pokemonResult.get(12).asInt(-1)
+          );
+        }).toList();
+
+
+        return new MoveDetail(move, pokemonSummaries);
       });
     }
   }
