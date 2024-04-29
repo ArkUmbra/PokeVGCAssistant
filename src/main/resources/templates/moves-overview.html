@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title>All Moves</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body class="container">
+<p th:text="|Showing ${numOfMoves} moves|" />
+
+<table>
+    <tr>
+        <td>Move</td>
+        <td>Type</td>
+        <td>Category</td>
+        <td>Base Power</td>
+        <td>Accuracy</td>
+        <td>Description</td>
+    </tr>
+    <tr th:each="summary: ${moveSummaries}">
+        <td>
+            <a th:href="@{/move/{id}(id=${summary.idName})}">
+                <p th:text="${summary.name.english}" />
+            </a>
+        </td>
+
+        <td>
+            <div th:replace="~{fragments/typeIcon :: ${summary.type}}" />
+        </td>
+
+        <td>
+            <div th:replace="~{fragments/moveCategory :: ${summary.category}}" />
+        </td>
+
+        <td th:text="${summary.power}" />
+        <td th:text="${summary.accuracy}" />
+        <td th:text="${summary.ingameDescription}" />
+    </tr>
+</table>
+
+
+<div th:replace="~{fragments/bottomNavigation :: move}" />
+
+</body>
+</html>

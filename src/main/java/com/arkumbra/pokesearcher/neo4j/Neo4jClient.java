@@ -804,6 +804,46 @@ public class Neo4jClient implements AutoCloseable {
 
   }
 
+  public List<MoveSummary> getMovesSummary() {
+    return getMovesSummary(null);
+  }
+
+  public List<MoveSummary> getMovesSummary(AttackMetaData filterBy) {
+    String queryString =
+        """
+        MATCH (m:Move)
+        """ + (filterBy == null ? "" : "MATCH (:AttackMetaData{label:$attackMetaData})<-[]-(m)") +
+        """
+        MATCH (m)-[]->(n:Name)
+        MATCH (m)-[]->(type:TypeValue)
+        MATCH (m)-[]->(c:AttackCategory)
+        return m.id, n.english, n.japanese, m.description, m.power, m.accuracy, c.label, type.label
+        order by m.id
+        """;
+    var params = (filterBy == null) ?
+        parameters() :
+        parameters("attackMetaData", filterBy.name());
+
+    try (var session = driver.session()) {
+       return session.executeWrite(tx -> {
+
+        return tx.run(queryString, params).list().stream().map(record -> {
+          String id = record.get(0).asString();
+          String englishName = record.get(1).asString();
+          String japaneseName = record.get(2).asString();
+          String description = record.get(3).asString();
+          int power = record.get(4).asInt(-1);
+          int accuracy = record.get(5).asInt(-1);
+          AttackCategory attackCategory = AttackCategory.valueOf(record.get(6).asString());
+          TypeValue typeValue = TypeValue.valueOf(record.get(7).asString());
+
+          return new MoveSummary(id, new Name(englishName, japaneseName), typeValue,
+              attackCategory, power, accuracy, description);
+        }).toList();
+      });
+    }
+  }
+
   public MoveDetail getMoveDetail(String moveId) {
     String queryString =
         """
@@ -827,9 +867,10 @@ public class Neo4jClient implements AutoCloseable {
              MATCH (pokemon)-[rDex:IN_DEX]->(:PokedexRegion{label:'National'})
              MATCH (pokemon)-[:NAMED]->(name:Name)
              MATCH (details)-[rtf:OF_TYPE]->(type:TypeValue)
-             RETURN distinct(details.id), name.english, name.japanese, form.formName, collect(type.label), collect(rtf.index),
+             RETURN distinct(details.id), name.english, name.japanese, form.formName, 
+                  collect(distinct(type.label)), collect(distinct(rtf.index)),
                   details.hp, details.atk, details.def, details.spAtk, details.spDef,
-                  details.spe, rDex.num
+                  details.spe, rDex.num, pokemon.id
              ORDER BY rDex.num
             """,
         queryParams
@@ -861,7 +902,7 @@ public class Neo4jClient implements AutoCloseable {
         // Pokemon with this move
         List<Record> records = tx.run(pokemonWithMoveQuery).list();
         List<PokemonSummary> pokemonSummaries = records.stream().map(pokemonResult -> {
-          String id = pokemonResult.get(0).asString();
+          String id = pokemonResult.get(13).asString();
           Name name = new Name(
               pokemonResult.get(1).asString(),
               pokemonResult.get(2).asString()

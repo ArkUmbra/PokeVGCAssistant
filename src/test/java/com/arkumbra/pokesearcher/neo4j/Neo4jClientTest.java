@@ -10,10 +10,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Neo4jClientTest {
 
@@ -139,7 +138,7 @@ public class Neo4jClientTest {
 
     PokedexScraper scraper = new PokedexScraper();
 
-    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/deoxys/"));
+    neo4jClient.storePokemon(scraper.extractPokemonInfo("https://www.serebii.net/pokedex-sv/calyrex/"));
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/rillaboom/");
 //    Pokemon pokemon = new PokedexScraper().extractPokemonInfo("https://www.serebii.net/pokedex-sv/tinkaton/");
 
@@ -214,6 +213,32 @@ public class Neo4jClientTest {
         });
 
     neo4jClient.writeJapaneseName(engToJpn);
+  }
+
+  @Test
+  public void scrapeAndStoreJapaneseNamesForSinglePokemon() {
+    PokemonCoJpScraper pokemonCoJpScraper = new PokemonCoJpScraper();
+
+    Map<String, String> engToJpn = new HashMap<>();
+
+    neo4jClient.getAllPokemon()
+        .stream()
+        .filter(p -> p.getNationalDexNumber() == 898)
+        .forEach(pokemonSummary -> {
+          System.out.println(pokemonSummary.getName().getEnglish());
+          String jpnName = pokemonCoJpScraper.getJapaneseNameForPokemon(pokemonSummary.getNationalDexNumber());
+          engToJpn.put(pokemonSummary.getName().getEnglish(), jpnName);
+          System.out.println(jpnName);
+        });
+
+    neo4jClient.writeJapaneseName(engToJpn);
+  }
+
+  @Test
+  public void testFindAllWindMoves() {
+    List<MoveSummary> movesSummary = neo4jClient.getMovesSummary(AttackMetaData.wind);
+    movesSummary.forEach(s -> System.out.println(s.getIdName()));
+    assertEquals(16, movesSummary.size());
   }
 
 }
