@@ -1,7 +1,9 @@
 package com.arkumbra.pokesearcher.neo4j;
 
+import com.arkumbra.pokesearcher.controller.PokemonDetail;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
+import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
 import com.arkumbra.pokesearcher.scraper.pokemon.PokemonCoJpScraper;
 import org.junit.jupiter.api.AfterAll;
@@ -10,7 +12,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -165,9 +174,9 @@ public class Neo4jClientTest {
 //    for (int i = 0; i < allPokemonDexUrls.size(); i++) {
 
     Iterator<String> iterator = allPokemonDexUrls.iterator();
-//    for (String url : allPokemonDexUrls) {
-    for (int i = 0; i < 50; i++) {
-      String url = iterator.next();
+    for (String url : allPokemonDexUrls) {
+//    for (int i = 0; i < 50; i++) {
+//      String url = iterator.next();
       System.out.println(url);
       try {
         Pokemon pokemon = scraper.extractPokemonInfo(url);
@@ -239,6 +248,190 @@ public class Neo4jClientTest {
     List<MoveSummary> movesSummary = neo4jClient.getMovesSummary(AttackMetaData.wind);
     movesSummary.forEach(s -> System.out.println(s.getIdName()));
     assertEquals(16, movesSummary.size());
+  }
+
+  @Test
+  public void testCreateAndStoreRegulationRules() {
+    String regulationId = "testId";
+
+    RegulationRules testRegulation = new RegulationRules(
+        regulationId,
+        "Test Regulation",
+        new Schedule(
+            ZonedDateTime.of(LocalDateTime.of(2024, 1, 1, 1, 0), ZoneId.of("UTC")),
+            ZonedDateTime.of(LocalDateTime.of(2024, 2, 3, 3, 3), ZoneId.of("UTC"))
+        ),
+        new ValidPokemon()
+            .put(PokedexRegion.National, new IntRange(1, 149)),
+        new ValidPokemon()
+            .put(PokedexRegion.National, 898),
+        3,
+        49,
+        true,
+        true,
+        new BattleTimers(
+            30,
+           31,
+            32,
+            33
+        )
+    );
+
+    neo4jClient.storeRegulation(testRegulation);
+
+    RegulationDetail resultRegDetail = neo4jClient.getRegulationDetail(regulationId);
+    Set<String> restrictedPokemonIds = resultRegDetail.getRestrictedPokemon().stream()
+        .map(p -> p.getIdName())
+        .collect(Collectors.toSet());
+    assertEquals(1, restrictedPokemonIds.size());
+    assertEquals("calyrex", restrictedPokemonIds.iterator().next());
+  }
+
+  @Test
+  public void testCreateAndStoreRegulationGRules() {
+    String regulationId = "g";
+
+    List<PokemonDetail> restrictedPokemon = lookupPokemonByName(
+        "Mewtwo",
+        "Lugia",
+        "Ho-Oh",
+        "Kyogre",
+        "Groudon",
+        "Rayquaza",
+        "Dialga",
+        "Palkia",
+        "Giratina",
+        "Reshiram",
+        "Zekrom",
+        "Kyurem",
+        "Cosmog",
+        "Cosmoem",
+        "Solgaleo",
+        "Lunala",
+        "Necrozma",
+        "Zacian",
+        "Zamazenta",
+        "Eternatus",
+        "Calyrex",
+
+        "Koraidon",
+        "Miraidon",
+        "Terapagos"
+    );
+
+    List<IntRange> restrictedNatDexNumbers = pokemonToDexIntRanges(restrictedPokemon);
+    List<IntRange> restrictedPaldeaDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Paldea));
+    List<IntRange> restrictedKitakamiDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Kitakami));
+    List<IntRange> restrictedBlueberryDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Blueberry));
+
+    ValidPokemon nonRestrictedPokemon = new ValidPokemon()
+        .put(PokedexRegion.Paldea, new IntRange(1, 400))
+        .put(PokedexRegion.Kitakami, new IntRange(1, 200))
+        .put(PokedexRegion.Blueberry, new IntRange(1, 242));
+
+    restrictedPaldeaDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Paldea, r));
+    restrictedKitakamiDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Kitakami, r));
+    restrictedBlueberryDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Blueberry, r));
+
+    ValidPokemon validRestrictedPokemon = new ValidPokemon();
+    restrictedNatDexNumbers.forEach(range -> validRestrictedPokemon.put(PokedexRegion.National, range));
+//        forEach(System.out::println);
+
+
+
+    RegulationRules testRegulation = new RegulationRules(
+        regulationId,
+        "Regulation G",
+        new Schedule(
+            ZonedDateTime.of(LocalDateTime.of(2024, 5, 1, 0, 0), ZoneId.of("UTC")),
+            ZonedDateTime.of(LocalDateTime.of(2024, 8, 31, 23, 59), ZoneId.of("UTC"))
+        ),
+        nonRestrictedPokemon,
+        validRestrictedPokemon,
+        1,
+        50,
+        true,
+        false,
+        new BattleTimers(
+            20 * 60,
+            7 * 60,
+            90,
+            45
+        )
+    );
+
+    neo4jClient.storeRegulation(testRegulation);
+
+//    RegulationDetail resultRegDetail = neo4jClient.getRegulationDetail(regulationId);
+//    Set<String> restrictedPokemonIds = resultRegDetail.getRestrictedPokemon().stream()
+//        .map(p -> p.getIdName())
+//        .collect(Collectors.toSet());
+//    assertEquals(1, restrictedPokemonIds.size());
+//    assertEquals("calyrex", restrictedPokemonIds.iterator().next());
+  }
+
+  private List<PokemonDetail> lookupPokemonByName(String... pokemonNames) {
+    Set<String> names = new HashSet<>(Arrays.asList(pokemonNames));
+
+    List<PokemonDetail> pokemonDetails =
+        neo4jClient.getAllPokemon().stream()
+        .filter(p -> names.contains(p.getName().getEnglish()))
+        .map(p -> neo4jClient.getPokemonDetail(p.getIdName(), p.getFormName()))
+        .toList();
+
+    return pokemonDetails;
+  }
+
+  private List<IntRange> pokemonToDexIntRanges(List<PokemonDetail> pokemonDetails) {
+    LinkedList<IntRange> ranges = new LinkedList<>();
+
+    for (PokemonDetail pokemonDetail : pokemonDetails) {
+      int num = pokemonDetail.getPokedexNumber().getNational();
+
+      if (! ranges.isEmpty()) {
+        if (ranges.getLast().getRightBoundInclusive() == num) {
+
+        } else if (ranges.getLast().getRightBoundInclusive() == num - 1) {
+          ranges.getLast().setRightBoundInclusive(num);
+        } else {
+          ranges.add(new IntRange(num, num));
+        }
+
+      } else {
+        ranges.add(new IntRange(num, num));
+      }
+    }
+
+    return ranges;
+  }
+
+  private List<IntRange> pokemonToDexIntRanges(List<PokemonDetail> pokemonDetails, DexNumSupplier dexNumSupplier) {
+    LinkedList<IntRange> ranges = new LinkedList<>();
+
+    for (PokemonDetail pokemonDetail : pokemonDetails) {
+//      int num = pokemonDetail.getPokedexNumber().getNational();
+      Integer num = dexNumSupplier.get(pokemonDetail);
+      if (num == null) continue;
+
+      if (! ranges.isEmpty()) {
+        if (ranges.getLast().getRightBoundInclusive() == num) {
+
+        } else if (ranges.getLast().getRightBoundInclusive() == num - 1) {
+          ranges.getLast().setRightBoundInclusive(num);
+        } else {
+          ranges.add(new IntRange(num, num));
+        }
+
+      } else {
+        ranges.add(new IntRange(num, num));
+      }
+    }
+
+    return ranges;
+  }
+
+  private interface DexNumSupplier {
+    Integer get(PokemonDetail pokemonDetail);
   }
 
 }

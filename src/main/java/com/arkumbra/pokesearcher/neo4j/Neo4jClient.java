@@ -13,6 +13,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.StringValue;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,6 +89,104 @@ public class Neo4jClient implements AutoCloseable {
     }
 
   }
+
+
+
+  public void storeRegulation(RegulationRules regulationRules) {
+    try (var session = driver.session()) {
+      String createRegQuery =
+          """
+          MERGE (r:Regulation {id: $id})
+          SET r.name = $regulationName,
+              r.numberOfRestricted = $numOfRestricted,
+              r.setLevel = $setLevel, 
+              r.startDate = $startDate, 
+              r.endDate = $endDate, 
+              r.itemsAllowed = $itemsAllowed, 
+              r.duplicateItemsAllowed = $duplicateItemsAllowed, 
+              r.totalTime = $totalTime,
+              r.playerTime = $playerTime, 
+              r.previewTime = $previewTime, 
+              r.turnTime = $turnTime
+          """;
+
+      var createRegParams = parameters(
+          "id", regulationRules.getId(),
+          "numOfRestricted", regulationRules.getNumberOfRestricted(),
+          "regulationName", regulationRules.getRegulationName(),
+          "setLevel", regulationRules.getSetLevel(),
+          "startDate", regulationRules.getSchedule().getStartTime(),
+          "endDate", regulationRules.getSchedule().getEndTime(),
+          "itemsAllowed", regulationRules.isItemsAllowed(),
+          "duplicateItemsAllowed", regulationRules.isDuplicateItemsAllowed(),
+          "totalTime", regulationRules.getBattleTimers().getTotalTime(),
+          "playerTime", regulationRules.getBattleTimers().getPlayerTime(),
+          "previewTime", regulationRules.getBattleTimers().getPreviewTime(),
+          "turnTime", regulationRules.getBattleTimers().getTurnTime()
+      );
+
+      session.run(createRegQuery, createRegParams);
+
+
+      String linkRegulationPokemonQuery =
+          """
+          MATCH (r:Regulation {id: $regulationId})
+          MATCH (p:Pokemon)
+          MATCH (p)-[d:IN_DEX]->(pRegion:PokedexRegion)
+          WHERE (pRegion.label = 'Blueberry' AND d.num IN $blueberryDexNos)
+           OR (pRegion.label = 'Kitakami' AND d.num IN $kitakamiDexNos)
+           OR (pRegion.label = 'Paldea' AND d.num IN $paldeaDexNos)
+           OR (pRegion.label = 'National' AND d.num IN $nationalDexNos)
+          MERGE (r)-[:PERMITTED {label:'nonRestricted'}]->(p)
+          
+          """;
+
+      var linkRegulationPokemonParams = parameters(
+          "regulationId", regulationRules.getId(),
+          "blueberryDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Blueberry),
+          "kitakamiDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Kitakami),
+          "paldeaDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Paldea),
+          "nationalDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.National)
+      );
+
+      session.run(linkRegulationPokemonQuery, linkRegulationPokemonParams);
+
+      String linkRegulationRestrictedPokemonQuery =
+          """
+          MATCH (r:Regulation {id: $regulationId})
+          MATCH (p:Pokemon)
+          MATCH (p)-[d:IN_DEX]->(pRegion:PokedexRegion)
+          WHERE (pRegion.label = 'Blueberry' AND d.num IN $blueberryDexNos)
+           OR (pRegion.label = 'Kitakami' AND d.num IN $kitakamiDexNos)
+           OR (pRegion.label = 'Paldea' AND d.num IN $paldeaDexNos)
+           OR (pRegion.label = 'National' AND d.num IN $nationalDexNos)
+          MERGE (r)-[:PERMITTED {label:'restricted'}]->(p)
+          """;
+
+      var linkRegulationRestrictedPokemonParams = parameters(
+          "regulationId", regulationRules.getId(),
+          "blueberryDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Blueberry),
+          "kitakamiDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Kitakami),
+          "paldeaDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Paldea),
+          "nationalDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.National)
+      );
+
+      session.run(linkRegulationRestrictedPokemonQuery, linkRegulationRestrictedPokemonParams);
+    }
+  }
+
+//  private String buildNumRanges(List<IntRange> ranges) {
+//    StringBuilder sb = new StringBuilder();
+//
+//    for (int i = 0; i < ranges.size(); i++) {
+//      IntRange range = ranges.get(0);
+//      sb.append("d.num <= ");
+//      sb.append();
+//
+//    }
+//
+//    return sb.toString();
+//  }
 
   public void storePokemon(Pokemon pokemon) {
     try (var session = driver.session()) {
@@ -205,8 +304,6 @@ public class Neo4jClient implements AutoCloseable {
           linkToHiddenAbilityQuery, linkToHiddenAbilityParams
       );
     });
-
-    Moveset moveset = pokemonDetails.getMoveset();
 
     String linkToEggMovesQuery =
         """
@@ -556,27 +653,31 @@ public class Neo4jClient implements AutoCloseable {
         return result.list();
       });
 
-      return allPokemon.stream().map(summaryRecord -> {
-        // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
-        String pokemonId = summaryRecord.get(1).asString();
-        Integer nationalDexNum = summaryRecord.get(2).asInt();
-        String englishName = summaryRecord.get(3).asString();
-        String japaneseName = summaryRecord.get(4).asString();
-        String formName = summaryRecord.get(5).asString();
-        List<TypeValue> types = readTypeListInCorrectOrder(summaryRecord.get(6), summaryRecord.get(7));
-
-        BaseStats baseStats = new BaseStats(
-            summaryRecord.get(8).asInt(),
-            summaryRecord.get(9).asInt(),
-            summaryRecord.get(10).asInt(),
-            summaryRecord.get(11).asInt(),
-            summaryRecord.get(12).asInt(),
-            summaryRecord.get(13).asInt()
-        );
-
-        return new PokemonSummary(pokemonId, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
-      }).collect(Collectors.toList());
+      return allPokemon.stream()
+          .map(this::convertRecordToPokemonSummary)
+          .collect(Collectors.toList());
     }
+  }
+
+  private PokemonSummary convertRecordToPokemonSummary(Record summaryRecord) {
+    // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
+    String pokemonId = summaryRecord.get(1).asString();
+    Integer nationalDexNum = summaryRecord.get(2).asInt();
+    String englishName = summaryRecord.get(3).asString();
+    String japaneseName = summaryRecord.get(4).asString();
+    String formName = summaryRecord.get(5).asString();
+    List<TypeValue> types = readTypeListInCorrectOrder(summaryRecord.get(6), summaryRecord.get(7));
+
+    BaseStats baseStats = new BaseStats(
+        summaryRecord.get(8).asInt(),
+        summaryRecord.get(9).asInt(),
+        summaryRecord.get(10).asInt(),
+        summaryRecord.get(11).asInt(),
+        summaryRecord.get(12).asInt(),
+        summaryRecord.get(13).asInt()
+    );
+
+    return new PokemonSummary(pokemonId, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
   }
 
   private List<TypeValue> readTypeListInCorrectOrder(Value typeLabels, Value typeIndices) {
@@ -780,14 +881,11 @@ public class Neo4jClient implements AutoCloseable {
         Move move = new Move(moveId, new Name(englishName, japaneseName), typeValue, attackCategory, pp, power,
             accuracy, description, critRatio, priority, effectChance, target, metaData);
 
-        if (movelistType.equals("WITH_EGG_MOVE")) {
-          eggMoves.add(move);
-        } else if (movelistType.equals("WITH_LEVEL_UP_MOVE")) {
-          levelUpMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
-        } else if (movelistType.equals("WITH_TM_MOVE")) {
-          tmMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
-        } else {
-          throw new IllegalArgumentException("Unexpected value for movelist type " + movelistType);
+        switch (movelistType) {
+          case "WITH_EGG_MOVE" -> eggMoves.add(move);
+          case "WITH_LEVEL_UP_MOVE" -> levelUpMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
+          case "WITH_TM_MOVE" -> tmMoves.add(new Pair<>(MoveAcquire.of(acquireType), move));
+          default -> throw new IllegalArgumentException("Unexpected value for movelist type " + movelistType);
         }
       }
 
@@ -930,6 +1028,79 @@ public class Neo4jClient implements AutoCloseable {
 
 
         return new MoveDetail(move, pokemonSummaries);
+      });
+    }
+  }
+
+  public RegulationDetail getRegulationDetail(String id) {
+
+    String getRegulationPokemonQuery =
+        """
+        MATCH (r:Regulation {id:$regulationId})
+        MATCH (r)-[permitted:PERMITTED]->(pokemon:Pokemon)
+        MATCH (details:PokemonDetails)
+        MATCH (pokemon)-[form:WITH_FORM]->(details)
+        MATCH (pokemon)-[rDex:IN_DEX]->(dex:PokedexRegion{label:'National'})
+        MATCH (pokemon)-[:NAMED]->(name:Name)
+        MATCH (details)-[t:OF_TYPE]->(type:TypeValue)
+        RETURN 
+          distinct(details.id), pokemon.id, rDex.num, name.english, name.japanese, form.formName, collect(type.label), 
+          collect(t.index), details.hp, details.atk, details.def, details.spAtk, details.spDef, details.spe, 
+          permitted.label
+        ORDER BY rDex.num
+        """;
+
+    String getRegulationRulesQuery =
+        """
+        MATCH (r:Regulation{id: $regulationId})
+        return
+              r.name, r.startDate, r.endDate, 
+              r.numberOfRestricted, r.setLevel, r.itemsAllowed, r.duplicateItemsAllowed, 
+              r.totalTime, r.playerTime, r.previewTime, r.turnTime
+        """;
+
+    var params = parameters("regulationId", id);
+
+    try (var session = driver.session()) {
+      return session.executeWrite(tx -> {
+
+        // Valid Pokemon in regulation
+        List<PokemonSummary> validPokemon = new ArrayList<>();
+        List<PokemonSummary> restrictedPokemon = new ArrayList<>();
+
+        for (Record record : tx.run(getRegulationPokemonQuery, params).list()) {
+          PokemonSummary summary = convertRecordToPokemonSummary(record);
+          String permittedType = record.get(14).asString();
+          switch (permittedType) {
+            case "nonRestricted" -> validPokemon.add(summary);
+            case "restricted" -> restrictedPokemon.add(summary);
+            default -> throw new IllegalArgumentException("Unknown PERMITTED type of " + permittedType);
+          }
+        }
+
+        // Regulation Rules
+        Record regulationRulesRecord = tx.run(getRegulationRulesQuery, params).single();
+
+        return new RegulationDetail(
+            id,
+            regulationRulesRecord.get(0).asString(),
+            new Schedule(
+                regulationRulesRecord.get(1).asZonedDateTime(),
+                regulationRulesRecord.get(2).asZonedDateTime()
+            ),
+            validPokemon,
+            restrictedPokemon,
+            regulationRulesRecord.get(3).asInt(),
+            regulationRulesRecord.get(4).asInt(),
+            regulationRulesRecord.get(5).asBoolean(),
+            regulationRulesRecord.get(6).asBoolean(),
+            new BattleTimers(
+                regulationRulesRecord.get(7).asLong(),
+                regulationRulesRecord.get(8).asLong(),
+                regulationRulesRecord.get(9).asLong(),
+                regulationRulesRecord.get(10).asLong()
+            )
+        );
       });
     }
   }

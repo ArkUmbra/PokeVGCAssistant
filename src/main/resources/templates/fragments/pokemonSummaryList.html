@@ -1,47 +1,52 @@
-<table class="table-sm">
-    <tr>
-        <td>Name</td>
-        <td>Pokedex #</td>
-        <td>Type</td>
-        <td>Base Stat Total</td>
-        <td>HP</td>
-        <td>Atk</td>
-        <td>Def</td>
-        <td>SpAtk</td>
-        <td>SpDef</td>
-        <td>Speed</td>
-    </tr>
-    <tr th:each="summary: ${pokemonSummaries}">
-        <td>
-            <picture>
-                <img width="40px" height="40px" style="margin-top: -10px; padding-right:5px" th:src="@{'/images/sprites/' + ${summary.name.english} + '.png'}" />
-            </picture>
+<table class="table table-sm table-striped table-hover">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>BST</th>
+            <th>HP</th>
+            <th>Atk</th>
+            <th>Def</th>
+            <th>SpAtk</th>
+            <th>SpDef</th>
+            <th>Speed</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="summary: ${pokemonSummaries}">
 
-            <span th:if="${#strings.isEmpty(summary.formName)}">
-                <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName})}">
-                    <span th:text="${summary.name.english + ' (' + summary.name.japanese + ')'}" />
-                </a>
-            </span>
-            <span th:unless="${#strings.isEmpty(summary.formName)}">
-                <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName}, formName=${summary.formName})}">
-                    <span th:text="${summary.name.english + ' (' + summary.name.japanese + ') [' + summary.formName + ']'}" />
-                </a>
-            </span>
-        </td>
+            <th scope="row" th:text="${summary.nationalDexNumber }" />
 
-        <td th:text="${summary.nationalDexNumber }" />
+            <td>
+                <picture>
+                    <img width="40px" height="40px" style="margin-top: -10px; padding-right:5px" th:src="@{'/images/sprites/' + ${summary.name.english} + '.png'}" />
+                </picture>
 
-        <td>
-            <span th:each="type: ${summary.types}">
-                <div th:replace="~{fragments/typeIcon :: ${type}}" />
-            </span>
-        </td>
-        <td th:text="${summary.baseStats.total}" />
-        <td th:text="${summary.baseStats.hp}" />
-        <td th:text="${summary.baseStats.atk}" />
-        <td th:text="${summary.baseStats.def}" />
-        <td th:text="${summary.baseStats.specialAtk}" />
-        <td th:text="${summary.baseStats.specialDef}" />
-        <td th:text="${summary.baseStats.speed}" />
-    </tr>
+                <span th:if="${#strings.isEmpty(summary.formName)}">
+                    <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName})}">
+                        <span th:text="${summary.name.english + ' (' + summary.name.japanese + ')'}" />
+                    </a>
+                </span>
+                <span th:unless="${#strings.isEmpty(summary.formName)}">
+                    <a th:href="@{/pokemon/{pokemonId}(pokemonId=${summary.idName}, formName=${summary.formName})}">
+                        <span th:text="${summary.name.english + ' (' + summary.name.japanese + ') [' + summary.formName + ']'}" />
+                    </a>
+                </span>
+            </td>
+
+            <td>
+                <span th:each="type: ${summary.types}">
+                    <th:block th:replace="~{fragments/typeIcon :: ${type}}" />
+                </span>
+            </td>
+            <td th:text="${summary.baseStats.total}" />
+            <td th:text="${summary.baseStats.hp}" />
+            <td th:text="${summary.baseStats.atk}" />
+            <td th:text="${summary.baseStats.def}" />
+            <td th:text="${summary.baseStats.specialAtk}" />
+            <td th:text="${summary.baseStats.specialDef}" />
+            <td th:text="${summary.baseStats.speed}" />
+        </tr>
+    </tbody>
 </table>

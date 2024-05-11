@@ -1,6 +1,5 @@
 package com.arkumbra.pokesearcher.scraper;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 public class Schedule {

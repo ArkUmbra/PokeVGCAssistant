@@ -8,24 +8,28 @@
 <body class="container">
 <p th:text="|Showing ${numOfAbilities} abilities|" />
 
-<table>
-    <tr>
-        <td>Ability</td>
-        <td>Description</td>
-        <td># with this Ability</td>
-        <td>Meta Data</td>
-    </tr>
-    <tr th:each="summary: ${abilitySummaries}">
-        <td>
-            <a th:href="@{/ability/{id}(id=${summary.ability.idName})}">
-                <p th:text="${summary.ability.name.english}" />
-            </a>
-        </td>
+<table class="table table-sm table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Ability</th>
+            <th>Description</th>
+            <th># with this Ability</th>
+            <th>Meta Data</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="summary: ${abilitySummaries}">
+            <td>
+                <a th:href="@{/ability/{id}(id=${summary.ability.idName})}">
+                    <p th:text="${summary.ability.name.english}" />
+                </a>
+            </td>
 
-        <td th:text="${summary.ability.ingameDescription}" />
-        <td th:text="${summary.matchingPokemon}" />
-        <td th:text="${summary.ability.metaData}" />
-    </tr>
+            <td th:text="${summary.ability.ingameDescription}" />
+            <td th:text="${summary.matchingPokemon}" />
+            <td th:text="${summary.ability.metaData}" />
+        </tr>
+    </tbody>
 </table>
 
 <div th:replace="~{fragments/bottomNavigation :: ability}" />

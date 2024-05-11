@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title th:text="${regulationDetail.regulationName}">Regulation Details</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body class="container">
+
+
+    <h3 th:text="${regulationDetail.regulationName}" />
+
+    <div style="width:470px">
+        <div class="row">
+            <div class="col" th:text="Schedule" />
+
+            <div class="col-8" th:text="${regulationDetail.schedule.startTime + ' ~ ' + regulationDetail.schedule.endTime}" />
+        </div>
+
+    </div>
+
+    <div th:with="pokemonSummaries=${regulationDetail.restrictedPokemon}" style="margin-top: 25px">
+        <h3 th:text="'Restricted Pokemon - ' + ${regulationDetail.numberOfRestricted + ' permitted'}"></h3>
+
+        <div th:replace="fragments/pokemonSummaryList" />
+    </div>
+
+    <div th:with="pokemonSummaries=${regulationDetail.validPokemon}" style="margin-top: 25px">
+        <h3>Unrestricted Pokemon</h3>
+
+        <div th:replace="fragments/pokemonSummaryList" />
+    </div>
+
+</body>
+</html>

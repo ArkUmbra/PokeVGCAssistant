@@ -3,12 +3,14 @@ package com.arkumbra.pokesearcher.controller;
 import com.arkumbra.pokesearcher.neo4j.MoveDetail;
 import com.arkumbra.pokesearcher.neo4j.MoveSummary;
 import com.arkumbra.pokesearcher.neo4j.Neo4jClient;
+import com.arkumbra.pokesearcher.neo4j.RegulationDetail;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
 import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.Ability;
 import com.arkumbra.pokesearcher.scraper.AbilitySummary;
+import com.arkumbra.pokesearcher.scraper.RegulationRules;
 import jakarta.websocket.server.PathParam;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -84,4 +86,13 @@ public class PokeSearcherController {
     model.addAttribute("searchText", nameContains);
     return "search-by-name";
   }
+
+  @GetMapping("/regulation/{regulationId}")
+  public String getRegulationDetail(Model model, @PathVariable("regulationId") String regulationId) {
+
+    RegulationDetail regulationDetail = neo4jClient.getRegulationDetail(regulationId);
+    model.addAttribute("regulationDetail", regulationDetail);
+    return "regulation-detail";
+  }
+
 }

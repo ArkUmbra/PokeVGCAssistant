@@ -1,33 +1,31 @@
 package com.arkumbra.pokesearcher.scraper;
 
-import java.util.concurrent.TimeUnit;
-
 public class BattleTimers {
-  private TimeUnit totalTime;
-  private TimeUnit playerTime;
-  private TimeUnit previewTime;
-  private TimeUnit turnTime;
+  private long totalTime;
+  private long playerTime;
+  private long previewTime;
+  private long turnTime;
 
-  public BattleTimers(TimeUnit totalTime, TimeUnit playerTime, TimeUnit previewTime, TimeUnit turnTime) {
+  public BattleTimers(long totalTime, long playerTime, long previewTime, long turnTime) {
     this.totalTime = totalTime;
     this.playerTime = playerTime;
     this.previewTime = previewTime;
     this.turnTime = turnTime;
   }
 
-  public TimeUnit getTotalTime() {
+  public long getTotalTime() {
     return totalTime;
   }
 
-  public TimeUnit getPlayerTime() {
+  public long getPlayerTime() {
     return playerTime;
   }
 
-  public TimeUnit getPreviewTime() {
+  public long getPreviewTime() {
     return previewTime;
   }
 
-  public TimeUnit getTurnTime() {
+  public long getTurnTime() {
     return turnTime;
   }
 }

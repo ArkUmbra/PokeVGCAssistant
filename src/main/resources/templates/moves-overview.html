@@ -8,34 +8,38 @@
 <body class="container">
 <p th:text="|Showing ${numOfMoves} moves|" />
 
-<table>
-    <tr>
-        <td>Move</td>
-        <td>Type</td>
-        <td>Category</td>
-        <td>Base Power</td>
-        <td>Accuracy</td>
-        <td>Description</td>
-    </tr>
-    <tr th:each="summary: ${moveSummaries}">
-        <td>
-            <a th:href="@{/move/{id}(id=${summary.idName})}">
-                <p th:text="${summary.name.english}" />
-            </a>
-        </td>
+<table class="table table-sm table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Move</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Base Power</th>
+            <th>Accuracy</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="summary: ${moveSummaries}">
+            <td>
+                <a th:href="@{/move/{id}(id=${summary.idName})}">
+                    <p th:text="${summary.name.english}" />
+                </a>
+            </td>
 
-        <td>
-            <div th:replace="~{fragments/typeIcon :: ${summary.type}}" />
-        </td>
+            <td>
+                <div th:replace="~{fragments/typeIcon :: ${summary.type}}" />
+            </td>
 
-        <td>
-            <div th:replace="~{fragments/moveCategory :: ${summary.category}}" />
-        </td>
+            <td>
+                <div th:replace="~{fragments/moveCategory :: ${summary.category}}" />
+            </td>
 
-        <td th:text="${summary.power}" />
-        <td th:text="${summary.accuracy}" />
-        <td th:text="${summary.ingameDescription}" />
-    </tr>
+            <td th:text="${summary.power}" />
+            <td th:text="${summary.accuracy}" />
+            <td th:text="${summary.ingameDescription}" />
+        </tr>
+    </tbody>
 </table>
 
 
