@@ -4,5 +4,7 @@ public enum PokedexRegion {
   National,
   Paldea,
   Kitakami,
-  Blueberry
+  Blueberry,
+  Lumiose,
+  Hyperspace
 }

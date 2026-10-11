@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title>Regulation</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body>
+
+<div class="container">
+<!--    stuff goes here-->
+    <p>Edit the below details. We've pre-populated it as best we could.</p>
+
+    <form action="/regulation/create" th:action="@{/regulation/create}" th:object="${regulationRules}" method="post">
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{id}" class="form-control" id="regId">
+            <label for="regId">Unique regulation ID</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{regulationName}" class="form-control" id="regulationName">
+            <label for="regulationName">Official Regulation Name</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{numberOfRestricted}" class="form-control" id="numberOfRestricted">
+            <label for="numberOfRestricted">The number of restricted mons permitted.</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{setLevel}" class="form-control" id="setLevel">
+            <label for="setLevel">The level Pokemon will be automatically set to.</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{itemsAllowed}" class="form-control" id="itemsAllowed">
+            <label for="itemsAllowed">Whether items are allowed</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{duplicateItemsAllowed}" class="form-control" id="duplicateItemsAllowed">
+            <label for="duplicateItemsAllowed">Whether two or more Pokemon can hold the same item</label>
+        </div>
+
+        <hr />
+
+        <h4>Battle timers</h4>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{battleTimers.totalTimeDuration}" class="form-control" id="totalTimeDuration">
+            <label for="totalTimeDuration">Total battle time</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{battleTimers.playerTimeDuration}" class="form-control" id="playerTimeDuration">
+            <label for="playerTimeDuration">Player time</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{battleTimers.previewTimeDuration}" class="form-control" id="previewTimeDuration">
+            <label for="previewTimeDuration">Pre-match preview time</label>
+        </div>
+
+        <div class="form-group pb-3">
+            <input type="text" th:field="*{battleTimers.turnTimeDuration}" class="form-control" id="turnTimeDuration">
+            <label for="totalTimeDuration">Turn time</label>
+        </div>
+
+        <hr />
+
+        <h4>Eligible Pokemon - Regular</h4>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
+            <div th:each="pokemon : ${eligiblePokemonResponse.mons}"
+                 style="display: flex; align-items: center; gap: 10px; width: calc((100% - 30px) / 4); min-width: 200px; box-sizing: border-box;"
+                 th:title="${pokemon.variant}">
+                <div th:style="|width: 32px; height: 32px; background-image: url('${eligiblePokemonResponse.spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
+                </div>
+
+                <span th:text="${pokemon.name}"/>
+            </div>
+        </div>
+
+
+        <div class="form-group pb-3">
+            <button type="submit" class="btn btn-primary">Create regulation</button>
+        </div>
+    </form>
+
+    <div th:replace="~{fragments/bottomNavigation :: regulation}" />
+</div>
+
+</body>
+</html>

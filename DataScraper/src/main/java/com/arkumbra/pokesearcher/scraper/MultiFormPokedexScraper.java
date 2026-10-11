@@ -11,6 +11,14 @@ import java.util.*;
 public class MultiFormPokedexScraper extends SingleFormPokedexScraper {
   private static final String NOT_PRESENT_IN_DEX = "-";
 
+  public MultiFormPokedexScraper() {
+    super();
+  }
+
+  public MultiFormPokedexScraper(ScraperUtil scraperUtil) {
+    super(scraperUtil);
+  }
+
   protected Elements getAlternateFormDexTable(Document doc) {
     return doc.select("table.dextable:contains(Alternate Forms)");
   }

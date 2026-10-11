@@ -10,6 +10,9 @@
             <li class="nav-item">
                 <a class="nav-link" href="/ability">Ability</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/regulation">Regulation</a>
+            </li>
             <input id="input-nav-search" class="form-control" type="search" style="width:150px" placeholder="Search anything" aria-label="Search">
             <button id="btn-nav-search" class="btn btn-outline-success" type="submit" onclick="navBarDoSearch()">&#x1F50E;</button>
         </ul>
@@ -20,13 +23,16 @@
     <div class="container-fluid justify-content-center">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/pokemon">Pokemon</a>
+                <a class="nav-link" href="/pokemon">Pokemon</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="/move">Moves</a>
+                <a class="nav-link active" aria-current="page" href="/move">Moves</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/ability">Ability</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/regulation">Regulation</a>
             </li>
             <input id="input-nav-search" class="form-control" type="search" style="width:150px" placeholder="Search anything" aria-label="Search">
             <button id="btn-nav-search" class="btn btn-outline-success" type="submit" onclick="navBarDoSearch()">&#x1F50E;</button>
@@ -38,13 +44,37 @@
     <div class="container-fluid justify-content-center">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/pokemon">Pokemon</a>
+                <a class="nav-link" href="/pokemon">Pokemon</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/move">Moves</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="/ability">Ability</a>
+                <a class="nav-link active" aria-current="page" href="/ability">Ability</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/regulation">Regulation</a>
+            </li>
+            <input id="input-nav-search" class="form-control" type="search" style="width:150px" placeholder="Search anything" aria-label="Search">
+            <button id="btn-nav-search" class="btn btn-outline-success" type="submit" onclick="navBarDoSearch()">&#x1F50E;</button>
+        </ul>
+    </div>
+</nav>
+
+<nav th:fragment="regulation" class="navbar fixed-bottom bg-dark">
+    <div class="container-fluid justify-content-center">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link" href="/pokemon">Pokemon</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/move">Moves</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/ability">Ability</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/regulation">Regulation</a>
             </li>
             <input id="input-nav-search" class="form-control" type="search" style="width:150px" placeholder="Search anything" aria-label="Search">
             <button id="btn-nav-search" class="btn btn-outline-success" type="submit" onclick="navBarDoSearch()">&#x1F50E;</button>
@@ -56,13 +86,16 @@
     <div class="container-fluid justify-content-center">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/pokemon">Pokemon</a>
+                <a class="nav-link" href="/pokemon">Pokemon</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/move">Moves</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/ability">Ability</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/regulation">Regulation</a>
             </li>
 
         </ul>

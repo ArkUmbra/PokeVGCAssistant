@@ -1,0 +1,3 @@
+[submodule "smogon-usage-parser"]
+	path = smogon-usage-parser
+	url = https://github.com/GriffinLedingham/smogon-usage-parser.git

@@ -1,0 +1,12 @@
+<div class="row">
+    <div class="col-sm">
+        <div>
+            <a th:href="@{/regulation/{id}(id=${record.id})}">
+                <span th:text="${record.name.english}" />
+            </a>
+        </div>
+
+        <p th:text="${'Ruleset and permitted Pokemon for official ruleset ' + record.name.english}"> </p>
+
+    </div>
+</div>

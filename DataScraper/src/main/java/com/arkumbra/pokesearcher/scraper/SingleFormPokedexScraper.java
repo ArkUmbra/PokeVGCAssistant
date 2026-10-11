@@ -12,7 +12,15 @@ import java.util.stream.Collectors;
 // TODO Refactor this to handle dex by generation
 public class SingleFormPokedexScraper {
   private static final String NOT_PRESENT_IN_DEX = "-";
-  protected static final ScraperUtil scraperUtil = new ScraperUtil();
+  protected final ScraperUtil scraperUtil;
+
+  public SingleFormPokedexScraper() {
+    scraperUtil = new ScraperUtil();
+  }
+
+  public SingleFormPokedexScraper(ScraperUtil scraperUtil) {
+    this.scraperUtil = scraperUtil;
+  }
 
   protected Pokemon extractPokemonInfo(Document doc, Pokemon pokemon) {
     // TDs
@@ -58,7 +66,12 @@ public class SingleFormPokedexScraper {
 
     pokemon.setDetails(details);
 
+    extractExtraPokemonInfo(pokemon, doc);
     return pokemon;
+  }
+
+  protected void extractExtraPokemonInfo(Pokemon pokemon, Document doc) {
+    // no op - for override
   }
 
   protected String parseBracketedWord(String word, int indexOfOpenBracket) {

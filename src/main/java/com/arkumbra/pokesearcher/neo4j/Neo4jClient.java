@@ -6,6 +6,7 @@ import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.OtherFormsSummary;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
+import com.arkumbra.pokesearcher.scraper.model.Pokedex;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
@@ -79,6 +80,7 @@ public class Neo4jClient implements AutoCloseable {
                 case "Pokemon": return new SearchByNameResponsePokemonRecord(id, name, formName, types);
                 case "Move": return new SearchByNameResponseMoveRecord(id, name, types.get(0), description);
                 case "Ability": return new SearchByNameResponseAbilityRecord(id, name, description);
+                case "Regulation": return new SearchByNameResponseRegulationRecord(id, name);
                 default: throw new RuntimeException("Did not understand result type " + resultType);
               }
 
@@ -94,11 +96,13 @@ public class Neo4jClient implements AutoCloseable {
 
   public void storeRegulation(RegulationRules regulationRules) {
     try (var session = driver.session()) {
+
       String createRegQuery =
           """
+          MERGE (name:Name {english: $regulationName, englishLower:$regulationNameLower})
           MERGE (r:Regulation {id: $id})
-          SET r.name = $regulationName,
-              r.numberOfRestricted = $numOfRestricted,
+          MERGE (r)-[:NAMED]->(name)
+          SET r.numberOfRestricted = $numOfRestricted,
               r.setLevel = $setLevel, 
               r.startDate = $startDate, 
               r.endDate = $endDate, 
@@ -114,6 +118,7 @@ public class Neo4jClient implements AutoCloseable {
           "id", regulationRules.getId(),
           "numOfRestricted", regulationRules.getNumberOfRestricted(),
           "regulationName", regulationRules.getRegulationName(),
+          "regulationNameLower", regulationRules.getRegulationName().toLowerCase(),
           "setLevel", regulationRules.getSetLevel(),
           "startDate", regulationRules.getSchedule().getStartTime(),
           "endDate", regulationRules.getSchedule().getEndTime(),
@@ -138,7 +143,6 @@ public class Neo4jClient implements AutoCloseable {
            OR (pRegion.label = 'Paldea' AND d.num IN $paldeaDexNos)
            OR (pRegion.label = 'National' AND d.num IN $nationalDexNos)
           MERGE (r)-[:PERMITTED {label:'nonRestricted'}]->(p)
-          
           """;
 
       var linkRegulationPokemonParams = parameters(
@@ -188,7 +192,20 @@ public class Neo4jClient implements AutoCloseable {
 //    return sb.toString();
 //  }
 
+
+
+  public void storePokedex(Pokedex pokedex) {
+    for (Pokemon pokemon : pokedex.getAllPokemon()) {
+      storePokemon(pokemon, pokedex.getGame());
+    }
+//    pokedex.getGame()
+  }
+
   public void storePokemon(Pokemon pokemon) {
+    storePokemon(pokemon, null);
+  }
+
+  public void storePokemon(Pokemon pokemon, Game game) {
     try (var session = driver.session()) {
       String createPokemonQuery =
           "MERGE (n:Name {english:$english, englishLower:$englishLower, japanese:$japanese}) \n" +
@@ -207,11 +224,15 @@ public class Neo4jClient implements AutoCloseable {
           (dex.in(PokedexRegion.Paldea) ? "MATCH (pPal:PokedexRegion {label:'Paldea'})  \n" : "") +
           (dex.in(PokedexRegion.Kitakami) ? "MATCH (pKit:PokedexRegion {label:'Kitakami'})  \n" : "") +
           (dex.in(PokedexRegion.Blueberry) ? "MATCH (pBlu:PokedexRegion {label:'Blueberry'})  \n" : "") +
+          (dex.in(PokedexRegion.Lumiose) ? "MATCH (pLum:PokedexRegion {label:'Lumiose'})  \n" : "") +
+          (dex.in(PokedexRegion.Hyperspace) ? "MATCH (pHyp:PokedexRegion {label:'Hyperspace'})  \n" : "") +
               "MERGE (p:Pokemon {id:$idName}) \n" +
           (dex.in(PokedexRegion.National) ? "MERGE (p)-[:IN_DEX {num:$natNum}]->(pNat)  \n" : "") +
           (dex.in(PokedexRegion.Paldea) ? "MERGE (p)-[:IN_DEX {num:$palNum}]->(pPal)  \n" : "") +
           (dex.in(PokedexRegion.Kitakami) ? "MERGE (p)-[:IN_DEX {num:$kitNum}]->(pKit)  \n" : "") +
-          (dex.in(PokedexRegion.Blueberry) ? "MERGE (p)-[:IN_DEX {num:$bluNum}]->(pBlu)  \n" : "");
+          (dex.in(PokedexRegion.Blueberry) ? "MERGE (p)-[:IN_DEX {num:$bluNum}]->(pBlu)  \n" : "") +
+          (dex.in(PokedexRegion.Lumiose) ? "MERGE (p)-[:IN_DEX {num:$lumNum}]->(pLum)  \n" : "") +
+          (dex.in(PokedexRegion.Hyperspace) ? "MERGE (p)-[:IN_DEX {num:$hypNum}]->(pHyp)  \n" : "");
 
 
       var linkPokedexParams = parameters(
@@ -219,7 +240,9 @@ public class Neo4jClient implements AutoCloseable {
           "natNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.National)),
           "palNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Paldea)),
           "kitNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Kitakami)),
-          "bluNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Blueberry))
+          "bluNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Blueberry)),
+          "lumNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Lumiose)),
+          "hypNum", nullToBlank(pokemon.getPokedexNumber().get(PokedexRegion.Hyperspace))
       );
 
       executeQuery(session,
@@ -1053,8 +1076,9 @@ public class Neo4jClient implements AutoCloseable {
     String getRegulationRulesQuery =
         """
         MATCH (r:Regulation{id: $regulationId})
+        MATCH (n:Name)<-[:NAMED]-(r)
         return
-              r.name, r.startDate, r.endDate, 
+              n.english, r.startDate, r.endDate, 
               r.numberOfRestricted, r.setLevel, r.itemsAllowed, r.duplicateItemsAllowed, 
               r.totalTime, r.playerTime, r.previewTime, r.turnTime
         """;

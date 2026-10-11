@@ -22,6 +22,9 @@ public class MoveAcquire implements Comparable<MoveAcquire> {
     MoveAcquire moveAcquire = new MoveAcquire();
     if (value.equals(MoveAcquireType.Evolve.name())) {
       moveAcquire.acquireType = MoveAcquireType.Evolve;
+    } else if (value.startsWith("Evolve")) {
+      moveAcquire.acquireType = MoveAcquireType.Evolve;
+      moveAcquire.numberValue = Integer.parseInt(value.split(" ")[1]);
     } else if (value.equals("—") || value.equals(MoveAcquireType.Relearner.name())) {
       moveAcquire.acquireType = MoveAcquireType.Relearner;
     } else if (value.equals(MoveAcquireType.PreEvoOnly.name())) {
@@ -31,6 +34,8 @@ public class MoveAcquire implements Comparable<MoveAcquire> {
     } else if (value.startsWith("TM")) {
       moveAcquire.acquireType = MoveAcquireType.TM;
       moveAcquire.numberValue = Integer.parseInt(value.split("TM")[1]);
+    } else if (value.equals("OVERRIDE_NO_LEVEL")) {
+      moveAcquire.acquireType = MoveAcquireType.Always;
     } else {
       moveAcquire.acquireType = MoveAcquireType.Level;
       moveAcquire.numberValue = Integer.parseInt(value);

@@ -5,6 +5,9 @@ import java.util.*;
 public class ValidPokemon {
   private final Map<PokedexRegion, List<IntRange>> ranges = new HashMap<>();
 
+  public ValidPokemon() {
+  }
+
   public ValidPokemon put(PokedexRegion region, int pokedexNumber) {
     return put(region, new IntRange(pokedexNumber, pokedexNumber));
   }

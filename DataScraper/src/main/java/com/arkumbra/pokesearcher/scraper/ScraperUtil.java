@@ -82,7 +82,7 @@ public class ScraperUtil {
     }
   }
 
-  private void parseLevelOrTmMoveset(List<Pair<MoveAcquire, String>> moves, Element dexTable,
+  protected void parseLevelOrTmMoveset(List<Pair<MoveAcquire, String>> moves, Element dexTable,
                                      MoveAcquireType moveAcquireOverride, String optionalFormFilter) {
 
     // Get a better match when searching by form name. Sometimes the form filter name will be 'alola' but the move will
@@ -114,16 +114,24 @@ public class ScraperUtil {
           continue;
       }
 
-      String levelOrTm = dataTds.get(0).text();
+      int colI = 0;
+      String levelOrTm = "OVERRIDE_NO_LEVEL";
+      if (includesLevelInMoveset()) {
+        levelOrTm = dataTds.get(colI++).text();
+      }
       MoveAcquire acquire = moveAcquireOverride != null ?
           new MoveAcquire(moveAcquireOverride) : MoveAcquire.of(levelOrTm);
 
-      String movePartialLink = dataTds.get(1).select("a").get(0).attribute("href").getValue();
+      String movePartialLink = dataTds.get(colI++).select("a").get(0).attribute("href").getValue();
       String[] splits = movePartialLink.split("/");
       String movename = splits[splits.length - 1].replaceAll(".shtml", "");
 
       moves.add(new Pair<>(acquire, movename));
     }
+  }
+
+  protected boolean includesLevelInMoveset() {
+    return true;
   }
 
   private void parseEggMovesMoveset(List<String> eggMoves, Element dexTable, String optionalFormFilter) {

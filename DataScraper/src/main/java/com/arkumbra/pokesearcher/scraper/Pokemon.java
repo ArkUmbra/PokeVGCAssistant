@@ -9,6 +9,7 @@ public class Pokemon {
   private PokedexNumber pokedexNumber;
   private PokemonDetails details;
   private List<PokemonDetails> alternateForms = new ArrayList<>();
+  private List<PokemonDetails> megaEvolutions = new ArrayList<>();
 
   @Override
   public String toString() {
@@ -45,6 +46,14 @@ public class Pokemon {
 
   public void setAlternateForms(List<PokemonDetails> alternateForms) {
     this.alternateForms = alternateForms;
+  }
+
+  public List<PokemonDetails> getMegaEvolutions() {
+    return megaEvolutions;
+  }
+
+  public void setMegaEvolutions(List<PokemonDetails> megaEvolutions) {
+    this.megaEvolutions = megaEvolutions;
   }
 
   public Name getName() {

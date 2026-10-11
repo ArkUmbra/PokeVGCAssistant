@@ -6,5 +6,5 @@ public enum MoveAcquireType {
   PreEvoOnly,
   Level,
   TM,
-  Distribution
+  Always, Distribution
 }

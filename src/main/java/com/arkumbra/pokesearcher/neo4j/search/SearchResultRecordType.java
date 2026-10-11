@@ -3,7 +3,8 @@ package com.arkumbra.pokesearcher.neo4j.search;
 public enum SearchResultRecordType {
   move(0),
   pokemon(1),
-  ability(2)
+  ability(2),
+  regulation(3)
   ;
 
   private int category;

@@ -5,7 +5,11 @@ import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.*;
+import com.arkumbra.pokesearcher.scraper.generator.MasterDataCatalogGenerator;
 import com.arkumbra.pokesearcher.scraper.pokemon.PokemonCoJpScraper;
+import com.arkumbra.pokesearcher.scraper.smogon.SmogonUsageParser;
+import com.arkumbra.pokesearcher.scraper.smogon.pojo.UsagePokemon;
+import com.arkumbra.pokesearcher.util.SmogonNameConverter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -139,6 +143,14 @@ public class Neo4jClientTest {
         System.out.println(dexUrl);
         e.printStackTrace();
       }
+    }
+  }
+
+  @Test
+  public void testScrapeAndStoreAllPokemonForChampions() {
+    var generator = new MasterDataCatalogGenerator();
+    for (Pokemon pokemon : generator.generateFor(Game.Champions).getAllPokemon()) {
+      neo4jClient.storePokemon(pokemon);
     }
   }
 
@@ -361,13 +373,29 @@ public class Neo4jClientTest {
     );
 
     neo4jClient.storeRegulation(testRegulation);
+  }
 
-//    RegulationDetail resultRegDetail = neo4jClient.getRegulationDetail(regulationId);
-//    Set<String> restrictedPokemonIds = resultRegDetail.getRestrictedPokemon().stream()
-//        .map(p -> p.getIdName())
-//        .collect(Collectors.toSet());
-//    assertEquals(1, restrictedPokemonIds.size());
-//    assertEquals("calyrex", restrictedPokemonIds.iterator().next());
+  @Test
+  public void testDownloadUsageRatingsFromSmogonAndStore() throws IOException {
+    List<UsagePokemon> pokemonUsageList = new SmogonUsageParser().parse(9, 2024, 4, "g");
+    System.out.println("Smogon usage file returned list of " + pokemonUsageList.size() + " pokemon");
+    int nonMatch = 0;
+    for (UsagePokemon pokemonUsage : pokemonUsageList) {
+      SmogonNameConverter converted = SmogonNameConverter.getBySmogonName(pokemonUsage.getName());
+      if (converted != null) {
+        PokemonDetail detail = neo4jClient.getPokemonDetail(converted.getId(), converted.getFormName());
+        System.out.println("Using lookup, found detail for " + detail.getName().getEnglish() + ", " + detail.getFormName());
+      } else {
+        SearchByNameResponse searchByNameResponse = neo4jClient.searchAllElementsByName(new SearchByNameRequest(pokemonUsage.getName()));
+        if (searchByNameResponse.records().size() != 1) {
+          System.err.println("No matching Pokemon found for name " + pokemonUsage.getName() + ". Found " + searchByNameResponse.records().size());
+          nonMatch++;
+        }
+      }
+
+
+    }
+    System.out.println("Unable to find " + nonMatch + " Pokemon by name");
   }
 
   private List<PokemonDetail> lookupPokemonByName(String... pokemonNames) {

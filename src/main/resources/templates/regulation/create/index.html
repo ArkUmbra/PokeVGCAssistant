@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title>Regulation</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body>
+
+<div class="container">
+    <p th:text="|Create a new Pokemon Champions regulation| " />
+
+    <form action="scrapeUrl" th:action="@{scrapeUrl}" th:object="${scrapeUrlRequest}" method="post">
+        <div class="form-group">
+            <input type="text" th:field="*{officialLink}" class="form-control" id="officialLink" placeholder="https://news.pokemon-home.com/en/page/816.html">
+            <label for="officialLink">Pokemon Home News link (e.g. https://news.pokemon-home.com/en/page/816.html")</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" >Rip info</button>
+    </form>
+
+    <div th:replace="~{fragments/bottomNavigation :: regulation}" />
+</div>
+
+</body>
+</html>

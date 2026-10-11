@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title>Regulation</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body>
+
+<div class="container">
+    <p th:text="|Manage information on Pokemon Champions regulations| " />
+
+
+    <a class="btn btn-primary" href="/regulation/create" role="button">Create new regulation</a>
+
+    <div th:replace="~{fragments/bottomNavigation :: regulation}" />
+</div>
+
+</body>
+</html>

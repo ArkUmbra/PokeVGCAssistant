@@ -13,6 +13,7 @@ public class PokedexScraper {
 
   private final SingleFormPokedexScraper pokedexScraper = new SingleFormPokedexScraper();
   private final MultiFormPokedexScraper multiFormPokedexScraper = new MultiFormPokedexScraper();
+  private final MegaEvolutionPokedexScraper megaScraper = new MegaEvolutionPokedexScraper();
 
   private final Set<PokemonSpecificScraper> pokemonSpecificScrapers = Set.of(
       new TaurosSpecificPokedexScraper(),
@@ -24,16 +25,21 @@ public class PokedexScraper {
       new FormsWithOnlyVisualDifferencesPokedexScraper()
   );
 
+  protected String getPokedexBaseUrl() {
+    return Constants.serebiiPokedexScarletViolet;
+  }
+
   public Set<String> getAllPokemonDexUrls() throws IOException {
-    Set<String> result = Util.getUrlsForAllSelectURLObjectsOnPage(Constants.serebiiPokedexScarletViolet, null, ".shtml");
-    result.remove("https://www.serebii.net/pokedex-sv//");
+    String baseUrl = getPokedexBaseUrl();
+    Set<String> result = Util.getUrlsForAllSelectURLObjectsOnPage(baseUrl, null, ".shtml");
+    result.remove(baseUrl + "/");
     return result;
   }
 
   public Pokemon extractPokemonInfo(String url) throws IOException {
     Document doc = getPageWithDelay(url);
 
-    String idName = url.replaceAll(Constants.serebiiPokedexScarletViolet, "").split(".shtml")[0].replace("/", "");
+    String idName = url.replaceAll(getPokedexBaseUrl(), "").split(".shtml")[0].replace("/", "");
     Pokemon pokemon = new Pokemon();
     pokemon.setIdName(idName);
 
@@ -42,9 +48,19 @@ public class PokedexScraper {
         return pokemonSpecificScraper.extractPokemonInfo(doc, pokemon);
     }
 
-    return (isMultiFormPokemon(doc) ? multiFormPokedexScraper : pokedexScraper)
-        .extractPokemonInfo(doc, pokemon);
+    return determineRequiredScraper(doc).extractPokemonInfo(doc, pokemon);
   }
+
+  private SingleFormPokedexScraper determineRequiredScraper(Document doc) {
+    if (isMultiFormPokemon(doc)) return getMultiFormScraper();
+    if (isMegaEvolutionPokemon(doc)) return getMegaEvoScraper();
+    return getSingleFormScraper();
+  }
+
+  private boolean isMegaEvolutionPokemon(Document doc) {
+    return !doc.select("table.dextable:contains(Mega )").isEmpty();
+  }
+
 
   protected boolean isMultiFormPokemon(Document doc) {
     Elements forms = getAlternateFormDexTable(doc);
@@ -53,6 +69,18 @@ public class PokedexScraper {
 
   protected Elements getAlternateFormDexTable(Document doc) {
     return doc.select("table.dextable:contains(Alternate Forms)");
+  }
+
+  protected MultiFormPokedexScraper getMultiFormScraper() {
+    return multiFormPokedexScraper;
+  }
+
+  protected SingleFormPokedexScraper getSingleFormScraper() {
+    return pokedexScraper;
+  }
+
+  private SingleFormPokedexScraper getMegaEvoScraper() {
+    return megaScraper;
   }
 
 
