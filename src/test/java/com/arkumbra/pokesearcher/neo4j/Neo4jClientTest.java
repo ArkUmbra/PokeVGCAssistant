@@ -262,118 +262,118 @@ public class Neo4jClientTest {
     assertEquals(16, movesSummary.size());
   }
 
-  @Test
-  public void testCreateAndStoreRegulationRules() {
-    String regulationId = "testId";
+//  @Test
+//  public void testCreateAndStoreRegulationRules() {
+//    String regulationId = "testId";
+//
+//    RegulationRules testRegulation = new RegulationRules(
+//        regulationId,
+//        "Test Regulation",
+//        new Schedule(
+//            ZonedDateTime.of(LocalDateTime.of(2024, 1, 1, 1, 0), ZoneId.of("UTC")),
+//            ZonedDateTime.of(LocalDateTime.of(2024, 2, 3, 3, 3), ZoneId.of("UTC"))
+//        ),
+//        new ValidPokemon()
+//            .put(PokedexRegion.National, new IntRange(1, 149)),
+//        new ValidPokemon()
+//            .put(PokedexRegion.National, 898),
+//        3,
+//        49,
+//        true,
+//        true,
+//        new BattleTimers(
+//            30,
+//           31,
+//            32,
+//            33
+//        )
+//    );
+//
+//    neo4jClient.storeRegulation(testRegulation);
+//
+//    RegulationDetail resultRegDetail = neo4jClient.getRegulationDetail(regulationId);
+//    Set<String> restrictedPokemonIds = resultRegDetail.getRestrictedPokemon().stream()
+//        .map(p -> p.getIdName())
+//        .collect(Collectors.toSet());
+//    assertEquals(1, restrictedPokemonIds.size());
+//    assertEquals("calyrex", restrictedPokemonIds.iterator().next());
+//  }
 
-    RegulationRules testRegulation = new RegulationRules(
-        regulationId,
-        "Test Regulation",
-        new Schedule(
-            ZonedDateTime.of(LocalDateTime.of(2024, 1, 1, 1, 0), ZoneId.of("UTC")),
-            ZonedDateTime.of(LocalDateTime.of(2024, 2, 3, 3, 3), ZoneId.of("UTC"))
-        ),
-        new ValidPokemon()
-            .put(PokedexRegion.National, new IntRange(1, 149)),
-        new ValidPokemon()
-            .put(PokedexRegion.National, 898),
-        3,
-        49,
-        true,
-        true,
-        new BattleTimers(
-            30,
-           31,
-            32,
-            33
-        )
-    );
-
-    neo4jClient.storeRegulation(testRegulation);
-
-    RegulationDetail resultRegDetail = neo4jClient.getRegulationDetail(regulationId);
-    Set<String> restrictedPokemonIds = resultRegDetail.getRestrictedPokemon().stream()
-        .map(p -> p.getIdName())
-        .collect(Collectors.toSet());
-    assertEquals(1, restrictedPokemonIds.size());
-    assertEquals("calyrex", restrictedPokemonIds.iterator().next());
-  }
-
-  @Test
-  public void testCreateAndStoreRegulationGRules() {
-    String regulationId = "g";
-
-    List<PokemonDetail> restrictedPokemon = lookupPokemonByName(
-        "Mewtwo",
-        "Lugia",
-        "Ho-Oh",
-        "Kyogre",
-        "Groudon",
-        "Rayquaza",
-        "Dialga",
-        "Palkia",
-        "Giratina",
-        "Reshiram",
-        "Zekrom",
-        "Kyurem",
-        "Cosmog",
-        "Cosmoem",
-        "Solgaleo",
-        "Lunala",
-        "Necrozma",
-        "Zacian",
-        "Zamazenta",
-        "Eternatus",
-        "Calyrex",
-
-        "Koraidon",
-        "Miraidon",
-        "Terapagos"
-    );
-
-    List<IntRange> restrictedNatDexNumbers = pokemonToDexIntRanges(restrictedPokemon);
-    List<IntRange> restrictedPaldeaDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Paldea));
-    List<IntRange> restrictedKitakamiDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Kitakami));
-    List<IntRange> restrictedBlueberryDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Blueberry));
-
-    ValidPokemon nonRestrictedPokemon = new ValidPokemon()
-        .put(PokedexRegion.Paldea, new IntRange(1, 400))
-        .put(PokedexRegion.Kitakami, new IntRange(1, 200))
-        .put(PokedexRegion.Blueberry, new IntRange(1, 242));
-
-    restrictedPaldeaDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Paldea, r));
-    restrictedKitakamiDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Kitakami, r));
-    restrictedBlueberryDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Blueberry, r));
-
-    ValidPokemon validRestrictedPokemon = new ValidPokemon();
-    restrictedNatDexNumbers.forEach(range -> validRestrictedPokemon.put(PokedexRegion.National, range));
-//        forEach(System.out::println);
-
-
-
-    RegulationRules testRegulation = new RegulationRules(
-        regulationId,
-        "Regulation G",
-        new Schedule(
-            ZonedDateTime.of(LocalDateTime.of(2024, 5, 1, 0, 0), ZoneId.of("UTC")),
-            ZonedDateTime.of(LocalDateTime.of(2024, 8, 31, 23, 59), ZoneId.of("UTC"))
-        ),
-        nonRestrictedPokemon,
-        validRestrictedPokemon,
-        1,
-        50,
-        true,
-        false,
-        new BattleTimers(
-            20 * 60,
-            7 * 60,
-            90,
-            45
-        )
-    );
-
-    neo4jClient.storeRegulation(testRegulation);
-  }
+//  @Test
+//  public void testCreateAndStoreRegulationGRules() {
+//    String regulationId = "g";
+//
+//    List<PokemonDetail> restrictedPokemon = lookupPokemonByName(
+//        "Mewtwo",
+//        "Lugia",
+//        "Ho-Oh",
+//        "Kyogre",
+//        "Groudon",
+//        "Rayquaza",
+//        "Dialga",
+//        "Palkia",
+//        "Giratina",
+//        "Reshiram",
+//        "Zekrom",
+//        "Kyurem",
+//        "Cosmog",
+//        "Cosmoem",
+//        "Solgaleo",
+//        "Lunala",
+//        "Necrozma",
+//        "Zacian",
+//        "Zamazenta",
+//        "Eternatus",
+//        "Calyrex",
+//
+//        "Koraidon",
+//        "Miraidon",
+//        "Terapagos"
+//    );
+//
+//    List<IntRange> restrictedNatDexNumbers = pokemonToDexIntRanges(restrictedPokemon);
+//    List<IntRange> restrictedPaldeaDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Paldea));
+//    List<IntRange> restrictedKitakamiDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Kitakami));
+//    List<IntRange> restrictedBlueberryDexNumbers = pokemonToDexIntRanges(restrictedPokemon, (p) -> p.getPokedexNumber().get(PokedexRegion.Blueberry));
+//
+//    ValidPokemon nonRestrictedPokemon = new ValidPokemon()
+//        .put(PokedexRegion.Paldea, new IntRange(1, 400))
+//        .put(PokedexRegion.Kitakami, new IntRange(1, 200))
+//        .put(PokedexRegion.Blueberry, new IntRange(1, 242));
+//
+//    restrictedPaldeaDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Paldea, r));
+//    restrictedKitakamiDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Kitakami, r));
+//    restrictedBlueberryDexNumbers.forEach(r -> nonRestrictedPokemon.removeRange(PokedexRegion.Blueberry, r));
+//
+//    ValidPokemon validRestrictedPokemon = new ValidPokemon();
+//    restrictedNatDexNumbers.forEach(range -> validRestrictedPokemon.put(PokedexRegion.National, range));
+////        forEach(System.out::println);
+//
+//
+//
+//    RegulationRules testRegulation = new RegulationRules(
+//        regulationId,
+//        "Regulation G",
+//        new Schedule(
+//            ZonedDateTime.of(LocalDateTime.of(2024, 5, 1, 0, 0), ZoneId.of("UTC")),
+//            ZonedDateTime.of(LocalDateTime.of(2024, 8, 31, 23, 59), ZoneId.of("UTC"))
+//        ),
+//        nonRestrictedPokemon,
+//        validRestrictedPokemon,
+//        1,
+//        50,
+//        true,
+//        false,
+//        new BattleTimers(
+//            20 * 60,
+//            7 * 60,
+//            90,
+//            45
+//        )
+//    );
+//
+//    neo4jClient.storeRegulation(testRegulation);
+//  }
 
   @Test
   public void testDownloadUsageRatingsFromSmogonAndStore() throws IOException {

@@ -145,15 +145,15 @@ public class Neo4jClient implements AutoCloseable {
           MERGE (r)-[:PERMITTED {label:'nonRestricted'}]->(p)
           """;
 
-      var linkRegulationPokemonParams = parameters(
-          "regulationId", regulationRules.getId(),
-          "blueberryDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Blueberry),
-          "kitakamiDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Kitakami),
-          "paldeaDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Paldea),
-          "nationalDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.National)
-      );
+//      var linkRegulationPokemonParams = parameters(
+//          "regulationId", regulationRules.getId(),
+//          "blueberryDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Blueberry),
+//          "kitakamiDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Kitakami),
+//          "paldeaDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.Paldea),
+//          "nationalDexNos", regulationRules.getValidPokemon().getToIntegerList(PokedexRegion.National)
+//      );
 
-      session.run(linkRegulationPokemonQuery, linkRegulationPokemonParams);
+//      session.run(linkRegulationPokemonQuery, linkRegulationPokemonParams);
 
       String linkRegulationRestrictedPokemonQuery =
           """
@@ -167,15 +167,15 @@ public class Neo4jClient implements AutoCloseable {
           MERGE (r)-[:PERMITTED {label:'restricted'}]->(p)
           """;
 
-      var linkRegulationRestrictedPokemonParams = parameters(
-          "regulationId", regulationRules.getId(),
-          "blueberryDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Blueberry),
-          "kitakamiDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Kitakami),
-          "paldeaDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Paldea),
-          "nationalDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.National)
-      );
-
-      session.run(linkRegulationRestrictedPokemonQuery, linkRegulationRestrictedPokemonParams);
+//      var linkRegulationRestrictedPokemonParams = parameters(
+//          "regulationId", regulationRules.getId(),
+//          "blueberryDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Blueberry),
+//          "kitakamiDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Kitakami),
+//          "paldeaDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.Paldea),
+//          "nationalDexNos", regulationRules.getRestrictedPokemon().getToIntegerList(PokedexRegion.National)
+//      );
+//
+//      session.run(linkRegulationRestrictedPokemonQuery, linkRegulationRestrictedPokemonParams);
     }
   }
 

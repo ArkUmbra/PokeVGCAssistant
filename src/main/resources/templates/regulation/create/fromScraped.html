@@ -71,10 +71,10 @@
         <h4>Eligible Pokemon - Regular</h4>
 
         <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
-            <div th:each="pokemon : ${eligiblePokemonResponse.mons}"
+            <div th:each="pokemon : ${regulationEligiblePokemon.mons}"
                  style="display: flex; align-items: center; gap: 10px; width: calc((100% - 30px) / 4); min-width: 200px; box-sizing: border-box;"
                  th:title="${pokemon.variant}">
-                <div th:style="|width: 32px; height: 32px; background-image: url('${eligiblePokemonResponse.spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
+                <div th:style="|width: 32px; height: 32px; background-image: url('${regulationEligiblePokemon.spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
                 </div>
 
                 <span th:text="${pokemon.name}"/>

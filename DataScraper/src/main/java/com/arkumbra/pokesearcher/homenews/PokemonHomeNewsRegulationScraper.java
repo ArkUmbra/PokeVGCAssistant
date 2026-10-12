@@ -126,8 +126,6 @@ public class PokemonHomeNewsRegulationScraper {
             parseDateTime(scheduleStart),
             parseDateTime(scheduleEnd)
           ),
-          null, // valid pokemon
-          null, // restricted pokemon
           0, // number of restricted
           50, // set level
           true, // items allowed

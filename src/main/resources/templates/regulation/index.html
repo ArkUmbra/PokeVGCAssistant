@@ -13,6 +13,19 @@
 
     <a class="btn btn-primary" href="/regulation/create" role="button">Create new regulation</a>
 
+    <hr />
+
+    <h3>Existing Regulations</h3>
+
+    <th:block th:each="regSummary : ${regSummaries}">
+        <div class="p-3 m-3 border-start border-top border-bottom border-primary">
+            <span hidden th:id="${regSummary.id}"> </span>
+            <div class="h4" th:text="${regSummary.name}"> </div>
+
+            <span>[[${regSummary.startDate}]] ~ [[${regSummary.endDate}]]</span>
+        </div>
+    </th:block>
+
     <div th:replace="~{fragments/bottomNavigation :: regulation}" />
 </div>
 
