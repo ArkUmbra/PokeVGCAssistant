@@ -11,7 +11,45 @@ public class RegulationRules {
   private Integer setLevel;
   private boolean itemsAllowed;
   private boolean duplicateItemsAllowed;
-  private BattleTimers battleTimers = new BattleTimers();
+  private BattleTimers battleTimers;
+  private String representativePokemonId;
+  private String representativeSpriteUrl;
+  private String representativeSpriteBgSize;
+  private String representativeSpritePosition;
+
+
+
+  public String getRepresentativePokemonId() {
+    return representativePokemonId;
+  }
+
+  public void setRepresentativePokemonId(String representativePokemonId) {
+    this.representativePokemonId = representativePokemonId;
+  }
+
+  public String getRepresentativeSpriteUrl() {
+    return representativeSpriteUrl;
+  }
+
+  public void setRepresentativeSpriteUrl(String representativeSpriteUrl) {
+    this.representativeSpriteUrl = representativeSpriteUrl;
+  }
+
+  public String getRepresentativeSpriteBgSize() {
+    return representativeSpriteBgSize;
+  }
+
+  public void setRepresentativeSpriteBgSize(String representativeSpriteBgSize) {
+    this.representativeSpriteBgSize = representativeSpriteBgSize;
+  }
+
+  public String getRepresentativeSpritePosition() {
+    return representativeSpritePosition;
+  }
+
+  public void setRepresentativeSpritePosition(String representativeSpritePosition) {
+    this.representativeSpritePosition = representativeSpritePosition;
+  }
 
   public RegulationRules() {
   }

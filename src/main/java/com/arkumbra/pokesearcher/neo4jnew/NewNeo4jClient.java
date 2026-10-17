@@ -130,7 +130,11 @@ public class NewNeo4jClient implements AutoCloseable {
                 r.previewTime = $previewTime,
                 r.turnTime = $turnTime,
                 r.eligiblePokemonUrl = $eligiblePokemonUrl,
-                r.spriteSheetUrl = $spriteSheetUrl
+                r.spriteSheetUrl = $spriteSheetUrl,
+                r.representativePokemonId = $representativePokemonId,
+                r.representativeSpriteUrl = $representativeSpriteUrl,
+                r.representativeSpriteBgSize = $representativeSpriteBgSize,
+                r.representativeSpritePosition = $representativeSpritePosition
             """;
 
         var createRegParams = parameters(
@@ -148,7 +152,13 @@ public class NewNeo4jClient implements AutoCloseable {
             "playerTime", finalPlayerTime,
             "previewTime", finalPreviewTime,
             "turnTime", finalTurnTime,
-            "spriteSheetUrl", spriteSheetUrl != null ? spriteSheetUrl : ""
+            "spriteSheetUrl", spriteSheetUrl != null ? spriteSheetUrl : "",
+            "representativePokemonId", rules.getRepresentativePokemonId() != null ? rules.getRepresentativePokemonId() : "",
+            "representativeSpriteUrl", (rules.getRepresentativeSpriteUrl() != null && !rules.getRepresentativeSpriteUrl().isBlank())
+                ? rules.getRepresentativeSpriteUrl()
+                : (spriteSheetUrl != null ? spriteSheetUrl : ""),
+            "representativeSpriteBgSize", rules.getRepresentativeSpriteBgSize() != null ? rules.getRepresentativeSpriteBgSize() : "",
+            "representativeSpritePosition", rules.getRepresentativeSpritePosition() != null ? rules.getRepresentativeSpritePosition() : ""
         );
         tx.run(createRegQuery, createRegParams);
 
@@ -165,8 +175,6 @@ public class NewNeo4jClient implements AutoCloseable {
             && !regulation.eligiblePokemon().mons().isEmpty()) {
           storeScrapedEligiblePokemon(tx, finalId, regulation.eligiblePokemon(), rules);
         }
-
-
 
         return null;
       });
@@ -295,7 +303,7 @@ public class NewNeo4jClient implements AutoCloseable {
         RETURN r.id, n.english, r.startDate, r.endDate,
                r.numberOfRestricted, r.setLevel, r.itemsAllowed, r.duplicateItemsAllowed,
                r.totalTime, r.playerTime, r.previewTime, r.turnTime,
-               r.eligiblePokemonUrl, r.spriteSheetUrl
+               r.eligiblePokemonUrl, r.spriteSheetUrl, r.representativePokemonId, r.representativeSpriteUrl
         """;
 
     String pokemonQuery =
@@ -379,7 +387,25 @@ public class NewNeo4jClient implements AutoCloseable {
         MATCH (r:Regulation)
         MATCH (r)-[:NAMED]->(n:Name)
         OPTIONAL MATCH (r)-[:PERMITTED]->(p:Pokemon)
-        RETURN r.id, n.english, r.startDate, r.endDate, count(p) AS pokemonCount
+        OPTIONAL MATCH (r)-[repRel:PERMITTED]->(rep:Pokemon)-[:NAMED]->(repName:Name)
+        WHERE (
+          (r.representativePokemonId CONTAINS '-'
+           AND repName.english = split(r.representativePokemonId, '-')[0]
+           AND repRel.variant = split(r.representativePokemonId, '-')[1])
+          OR
+          (NOT r.representativePokemonId CONTAINS '-'
+           AND repName.english = r.representativePokemonId
+           AND (repRel.variant = '' OR repRel.variant IS NULL))
+        )
+        RETURN r.id,
+               n.english,
+               r.startDate,
+               r.endDate,
+               count(distinct p) AS pokemonCount,
+               r.representativePokemonId,
+               coalesce(r.representativeSpriteUrl, r.spriteSheetUrl, '') AS representativeSpriteUrl,
+               coalesce(repRel.spriteBgSize, r.representativeSpriteBgSize, '') AS repSpriteBgSize,
+               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition
         ORDER BY r.startDate DESC
         """;
 
@@ -389,12 +415,16 @@ public class NewNeo4jClient implements AutoCloseable {
         var result = tx.run(query);
         while (result.hasNext()) {
           Record record = result.next();
-          String id           = record.get(0).asString();
-          String name         = record.get(1).asString();
+          String id           = record.get(0).asString("");
+          String name         = record.get(1).asString("");
           ZonedDateTime start = record.get(2).isNull() ? null : record.get(2).asZonedDateTime();
           ZonedDateTime end   = record.get(3).isNull() ? null : record.get(3).asZonedDateTime();
           int pokemonCount    = record.get(4).asInt(0);
-          summaries.add(new RegulationSummary(id, name, start, end, pokemonCount));
+          String representativePokemonId = record.get(5).isNull() ? "" : record.get(5).asString("");
+          String representativeSpriteUrl = record.get(6).isNull() ? "" : record.get(6).asString("");
+          String representativeSpriteBgSize = record.get(7).isNull() ? "" : record.get(7).asString("");
+          String representativeSpritePosition = record.get(8).isNull() ? "" : record.get(8).asString("");
+          summaries.add(new RegulationSummary(id, name, start, end, pokemonCount, representativePokemonId, representativeSpriteUrl, representativeSpriteBgSize, representativeSpritePosition));
         }
         return summaries;
       });

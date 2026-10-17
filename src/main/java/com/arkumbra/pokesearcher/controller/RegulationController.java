@@ -72,7 +72,7 @@ public class RegulationController {
 
     neo4jClient.storeRegulation(regulation);
 
-    return "redirect:regulation";
+    return "redirect:/regulation";
   }
 
 

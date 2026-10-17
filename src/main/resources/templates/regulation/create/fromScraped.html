@@ -70,10 +70,17 @@
 
         <h4>Eligible Pokemon - Regular</h4>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
+        <p>Select the Pokemon to represent this Regulation</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;" id="allPermittedMons"
+             th:data-spritesheet="${regulationEligiblePokemon.spriteSheetUrl}">
             <div th:each="pokemon : ${regulationEligiblePokemon.mons}"
                  style="display: flex; align-items: center; gap: 10px; width: calc((100% - 30px) / 4); min-width: 200px; box-sizing: border-box;"
-                 th:title="${pokemon.variant}">
+                 th:title="${pokemon.variant}"
+                 th:data-name="${pokemon.name}"
+                 th:data-variant="${pokemon.variant}"
+                 th:data-sprite-bg-size="${pokemon.spriteBgSize}"
+                 th:data-sprite-position="${pokemon.spritePosition}">
                 <div th:style="|width: 32px; height: 32px; background-image: url('${regulationEligiblePokemon.spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
                 </div>
 
@@ -83,7 +90,39 @@
 
 
         <div class="form-group pb-3">
-            <button type="submit" class="btn btn-primary">Create regulation</button>
+            <input type="hidden" th:field="*{representativePokemonId}" id="representativePokemonId" />
+            <input type="hidden" th:field="*{representativeSpriteUrl}" id="representativeSpriteUrl" />
+            <input type="hidden" th:field="*{representativeSpriteBgSize}" id="representativeSpriteBgSize" />
+            <input type="hidden" th:field="*{representativeSpritePosition}" id="representativeSpritePosition" />
+
+        <button type="submit" class="btn btn-primary">Create regulation</button>
+
+        <script>
+            const allMonsContainer = document.getElementById('allPermittedMons');
+            const spriteSheetUrl = allMonsContainer.getAttribute('data-spritesheet') || '';
+            const allMons = document.querySelectorAll('#allPermittedMons > div');
+            const repInput = document.getElementById('representativePokemonId');
+            const repSpriteUrlInput = document.getElementById('representativeSpriteUrl');
+            const repBgSizeInput = document.getElementById('representativeSpriteBgSize');
+            const repPositionInput = document.getElementById('representativeSpritePosition');
+
+            allMons.forEach(div => {
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', () => {
+                    // remove previous selection style
+                    allMons.forEach(d => d.classList.remove('selected-rep'));
+                    div.classList.add('selected-rep');
+                    // Build representative ID preserving original casing and variant
+                    const name = div.getAttribute('data-name') || div.querySelector('span').innerText.trim();
+                    const variant = div.getAttribute('data-variant') || div.getAttribute('title') || '';
+                    const repId = variant ? `${name}-${variant}` : name;
+                    repInput.value = repId;
+                    repSpriteUrlInput.value = spriteSheetUrl;
+                    repBgSizeInput.value = div.getAttribute('data-sprite-bg-size') || '';
+                    repPositionInput.value = div.getAttribute('data-sprite-position') || '';
+                });
+            });
+        </script>
         </div>
     </form>
 

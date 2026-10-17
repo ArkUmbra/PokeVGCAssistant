@@ -5,3 +5,18 @@ body {
 .container {
     max-width: 900px !important;
 }
+
+.regulation-hover-bg:hover {
+  background-color: #313539 !important; /* Replace with your desired color */
+}
+
+/* Highlight for selected representative Pokemon */
+.selected-rep {
+    /* subtle amber outline for dark mode */
+    outline: 2px solid #ffc107;
+    /* light amber background with transparency */
+    background-color: rgba(255, 193, 7, 0.15);
+    border-radius: 4px;
+    /* optional slight shadow for depth */
+    box-shadow: 0 0 6px rgba(255, 193, 7, 0.3);
+}

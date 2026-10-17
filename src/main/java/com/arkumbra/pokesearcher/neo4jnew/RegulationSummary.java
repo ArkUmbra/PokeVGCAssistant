@@ -10,13 +10,21 @@ public class RegulationSummary {
   private final ZonedDateTime startDate;
   private final ZonedDateTime endDate;
   private final int numberOfPokemon;
+  private final String representativePokemonId;
+  private final String representativeSpriteUrl;
+  private final String representativeSpriteBgSize;
+  private final String representativeSpritePosition;
 
-  public RegulationSummary(String id, String name, ZonedDateTime startDate, ZonedDateTime endDate, int numberOfPokemon) {
+  public RegulationSummary(String id, String name, ZonedDateTime startDate, ZonedDateTime endDate, int numberOfPokemon, String representativePokemonId, String representativeSpriteUrl, String representativeSpriteBgSize, String representativeSpritePosition) {
     this.id = id;
     this.name = name;
     this.startDate = startDate;
     this.endDate = endDate;
     this.numberOfPokemon = numberOfPokemon;
+    this.representativePokemonId = representativePokemonId;
+    this.representativeSpriteUrl = representativeSpriteUrl;
+    this.representativeSpriteBgSize = representativeSpriteBgSize;
+    this.representativeSpritePosition = representativeSpritePosition;
   }
 
   public String getId() {
@@ -59,6 +67,38 @@ public class RegulationSummary {
     return numberOfPokemon;
   }
 
+  public String getRepresentativePokemonId() {
+    return representativePokemonId;
+  }
+
+  public String representativePokemonId() {
+    return representativePokemonId;
+  }
+
+  public String getRepresentativeSpriteUrl() {
+    return representativeSpriteUrl;
+  }
+
+  public String representativeSpriteUrl() {
+    return representativeSpriteUrl;
+  }
+
+  public String getRepresentativeSpriteBgSize() {
+    return representativeSpriteBgSize;
+  }
+
+  public String representativeSpriteBgSize() {
+    return representativeSpriteBgSize;
+  }
+
+  public String getRepresentativeSpritePosition() {
+    return representativeSpritePosition;
+  }
+
+  public String representativeSpritePosition() {
+    return representativeSpritePosition;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -68,12 +108,16 @@ public class RegulationSummary {
         Objects.equals(id, that.id) &&
         Objects.equals(name, that.name) &&
         Objects.equals(startDate, that.startDate) &&
-        Objects.equals(endDate, that.endDate);
+        Objects.equals(endDate, that.endDate) &&
+        Objects.equals(representativePokemonId, that.representativePokemonId) &&
+        Objects.equals(representativeSpriteUrl, that.representativeSpriteUrl) &&
+        Objects.equals(representativeSpriteBgSize, that.representativeSpriteBgSize) &&
+        Objects.equals(representativeSpritePosition, that.representativeSpritePosition);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, startDate, endDate, numberOfPokemon);
+    return Objects.hash(id, name, startDate, endDate, numberOfPokemon, representativePokemonId, representativeSpriteUrl, representativeSpriteBgSize, representativeSpritePosition);
   }
 
   @Override
@@ -84,6 +128,10 @@ public class RegulationSummary {
         ", startDate=" + startDate +
         ", endDate=" + endDate +
         ", numberOfPokemon=" + numberOfPokemon +
+        ", representativePokemonId='" + representativePokemonId + '\'' +
+        ", representativeSpriteUrl='" + representativeSpriteUrl + '\'' +
+        ", representativeSpriteBgSize='" + representativeSpriteBgSize + '\'' +
+        ", representativeSpritePosition='" + representativeSpritePosition + '\'' +
         '}';
   }
 }
