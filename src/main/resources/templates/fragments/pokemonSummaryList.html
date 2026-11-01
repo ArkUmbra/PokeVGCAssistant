@@ -41,12 +41,12 @@
                 </span>
             </td>
             <td th:text="${summary.baseStats.total}" />
-            <td th:text="${summary.baseStats.hp}" />
-            <td th:text="${summary.baseStats.atk}" />
-            <td th:text="${summary.baseStats.def}" />
-            <td th:text="${summary.baseStats.specialAtk}" />
-            <td th:text="${summary.baseStats.specialDef}" />
-            <td th:text="${summary.baseStats.speed}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.hp})}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.atk})}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.def})}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.specialAtk})}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.specialDef})}" />
+            <td th:replace="~{fragments/stat :: stat(${summary.baseStats.speed})}" />
         </tr>
     </tbody>
 </table>

@@ -1,9 +1,26 @@
 body {
-    padding-bottom: 100px;
+    padding-top: 80px;
+    padding-bottom: 0;
 }
 
 .container {
     max-width: 900px !important;
+}
+
+.stat-very-high {
+    background-color: #34A !important; #54B
+}
+.stat-high {
+    background-color: #358 !important; #539
+}
+.stat-medium {
+    background-color: #373 !important;
+}
+.stat-low {
+    background-color: #853 !important; #935
+}
+.stat-very-low {
+    background-color: #A43 !important; #A23
 }
 
 .regulation-hover-bg:hover {

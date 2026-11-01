@@ -13,6 +13,7 @@ public class SerebiiScraper extends PokedexScraper implements BasePokedexScraper
   private final SingleFormPokedexScraper singleFormPokedexScraper = new SingleFormPokedexScraper(new ChampionsScraperUtil());
   private final MultiFormPokedexScraper multiFormPokedexScraper = new MultiFormPokedexScraper(new ChampionsScraperUtil());
 
+  private final AbilityDexScraper abilityDexScraper = new AbilityDexScraper();
 
   private final Game game;
 
@@ -29,29 +30,58 @@ public class SerebiiScraper extends PokedexScraper implements BasePokedexScraper
   public Pokedex scrapeAll() {
 
     try {
-      Set<String> urls = getAllPokemonDexUrls();
+      var pokemonList = scrapePokemon();
+      var abilitiesList = scrapeAbilities();
 
-      List<Pokemon> pokemonList = new ArrayList<>();
-      for (String url : urls) {
-        System.out.println(url);
-
-        try {
-          pokemonList.add(super.extractPokemonInfo(url));
-        } catch (Exception e) {
-          System.err.println(url);
-          e.printStackTrace();
-        }
-
-        if (pokemonList.size() > 10) break;
-      }
-
-      return new Pokedex(game, pokemonList);
+      return new Pokedex(game, pokemonList, abilitiesList);
 
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
   }
+
+  private List<Pokemon> scrapePokemon() throws IOException {
+    Set<String> urls = getAllPokemonDexUrls();
+
+    List<Pokemon> pokemonList = new ArrayList<>();
+    for (String url : urls) {
+      System.out.println(url);
+
+      try {
+        pokemonList.add(super.extractPokemonInfo(url));
+      } catch (Exception e) {
+        System.err.println(url);
+        e.printStackTrace();
+      }
+
+      // TODO remove this after testing
+      if (pokemonList.size() > 40) break;
+    }
+
+    return pokemonList;
+  }
+
+
+  private List<Ability> scrapeAbilities() throws IOException {
+    var abilityDexUrls = abilityDexScraper.getAllAbilityDexUrls();
+
+    var results = new ArrayList<Ability>();
+
+    for (String abilityDexUrl : abilityDexUrls) {
+      try {
+        results.add(abilityDexScraper.extractAbilityInfo(abilityDexUrl));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+
+      // TODO remove this after testing
+      if (results.size() > 40) break;
+    }
+
+    return results;
+  }
+
 
   @Override
   protected MultiFormPokedexScraper getMultiFormScraper() {

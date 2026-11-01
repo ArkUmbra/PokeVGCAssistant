@@ -1,0 +1,28 @@
+<nav th:fragment="headerNav" class="navbar fixed-top bg-dark">
+
+
+    <div class="container-fluid justify-content-center">
+        <div class="site-brand" style="padding-top:2px; text-align:center; background-color: #0F0F0E">
+            <img src="/images/logo.png" alt="Site Logo" style="height:40px;" />
+            <h1 style="display:inline; margin-left:10px; color:white; align-items: center">VGC Assistant</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid justify-content-center">
+        <ul class="nav nav-tabs">
+            <li class="nav-item"><a class="nav-link" href="/pokemon">Pokemon</a></li>
+            <li class="nav-item"><a class="nav-link" href="/move">Moves</a></li>
+            <li class="nav-item"><a class="nav-link" href="/ability">Ability</a></li>
+            <li class="nav-item"><a class="nav-link" href="/regulation">Regulation</a></li>
+            <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
+            <li class="nav-item"><a class="nav-link" href="/search">Search</a></li>
+            <li class="nav-item">
+                <input id="input-nav-search" class="form-control" type="search" style="width:150px" placeholder="Search anything" aria-label="Search" />
+            </li>
+            <li class="nav-item">
+                <button id="btn-nav-search" class="btn btn-outline-success" type="submit" onclick="navBarDoSearch()">&#x1F50E;</button>
+            </li>
+        </ul>
+    </div>
+</nav>
+

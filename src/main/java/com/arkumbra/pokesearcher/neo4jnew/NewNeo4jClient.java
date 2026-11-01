@@ -431,4 +431,38 @@ public class NewNeo4jClient implements AutoCloseable {
     }
   }
 
+  /**
+   * Deletes a regulation by its ID, removing the regulation node, its PERMITTED connections
+   * to eligible Pokemon, its NAMED connection, and any orphaned Name node if it is not
+   * referenced by any other entity. Other regulations and Pokemon nodes remain unaffected.
+   *
+   * @param id The unique regulation ID to delete
+   * @return true if a regulation was deleted, false otherwise
+   */
+  public boolean deleteRegulation(String id) {
+    if (id == null || id.isBlank()) {
+      return false;
+    }
+
+    String query =
+        """
+        MATCH (r:Regulation {id: $id})
+        OPTIONAL MATCH (r)-[:NAMED]->(n:Name)
+        OPTIONAL MATCH (other)-[:NAMED]->(n) WHERE other <> r
+        WITH r, n, count(other) AS otherCount
+        DETACH DELETE r
+        WITH n, otherCount
+        WHERE n IS NOT NULL AND otherCount = 0
+        DELETE n
+        """;
+
+    try (var session = driver.session()) {
+      return session.executeWrite(tx -> {
+        var result = tx.run(query, parameters("id", id));
+        var summary = result.consume();
+        return summary.counters().nodesDeleted() > 0;
+      });
+    }
+  }
+
 }

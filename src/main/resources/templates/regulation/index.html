@@ -19,20 +19,29 @@
 
     <th:block th:each="regSummary : ${regSummaries}">
 
-        <div class="card" style="width: 90%;">
-            <div class="row card-body">
-                <div class="col-md-4" th:style="|width: 128px; height: 128px; background-image: url('${regSummary.representativeSpriteUrl}'); background-size: ${regSummary.representativeSpriteBgSize}; background-position: ${regSummary.representativeSpritePosition}; flex-shrink: 0;|">
+        <div class="card mb-3" style="width: 90%;">
+            <div class="row card-body align-items-center">
+                <div class="col-md-auto" th:style="|width: 128px; height: 128px; background-image: url('${regSummary.representativeSpriteUrl}'); background-size: ${regSummary.representativeSpriteBgSize}; background-position: ${regSummary.representativeSpritePosition}; flex-shrink: 0;|">
                 </div>
                 <div class="col-md-8">
-                    <h5 class="card-title" th:text="${regSummary.name}"></h5>
-                    <p class="card-text">[[${regSummary.startDate}]] ~ [[${regSummary.endDate}]] @ [[${regSummary.representativePokemonId}]]</p>
-                    <a href="#" class="btn btn-primary stretched-link">View regulation</a>
+                    <h5 class="card-title" th:text="${regSummary.name + ' (' + regSummary.id + ')'}"></h5>
+                    <p class="card-text">[[${regSummary.startDate}]] ~ [[${regSummary.endDate}]]</p>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-primary">View regulation</a>
+                        <form th:action="@{/regulation/{id}/delete(id=${regSummary.id})}"
+                              method="post"
+                              style="display: inline;"
+                              th:data-reg-name="${regSummary.name}"
+                              onsubmit="return confirm('Are you sure you want to delete ' + (this.getAttribute('data-reg-name') || 'this regulation') + '?');">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </th:block>
 
-    <div th:replace="~{fragments/bottomNavigation :: regulation}" />
+    <div th:replace="~{fragments/headerNav}" />
 </div>
 
 </body>

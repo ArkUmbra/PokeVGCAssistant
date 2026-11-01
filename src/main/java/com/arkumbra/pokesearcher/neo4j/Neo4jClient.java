@@ -195,6 +195,12 @@ public class Neo4jClient implements AutoCloseable {
 
 
   public void storePokedex(Pokedex pokedex) {
+    initializeConstantEnumDataToDatabase();
+
+    for (Ability ability : pokedex.getAllAbilities()) {
+      storeAbility(ability);
+    }
+
     for (Pokemon pokemon : pokedex.getAllPokemon()) {
       storePokemon(pokemon, pokedex.getGame());
     }
@@ -279,6 +285,7 @@ public class Neo4jClient implements AutoCloseable {
     );
 
 
+    // Relies on types being pre-inserted
     String linkToTypesQuery =
         """
         UNWIND range(0, size($typeList)-1) as i
@@ -291,6 +298,7 @@ public class Neo4jClient implements AutoCloseable {
         "qualifiedFormName", qualifiedFormName
     );
 
+    // Relies on abilities being pre-inserted
     String linkToStandardAbilityQuery =
         """
         UNWIND $abilityList AS ability
@@ -540,6 +548,17 @@ public class Neo4jClient implements AutoCloseable {
         return result.list();
       });
       return allAbilities.size();
+    }
+  }
+
+  public int getNumberOfPokemon() {
+    try (var session = driver.session()) {
+      var allPokemon = session.executeRead(tx -> {
+        var query = new Query("MATCH (p:Pokemon) RETURN count(p) as count");
+        var result = tx.run(query);
+        return result.hasNext() ? result.next().get("count").asInt(0) : 0;
+      });
+      return allPokemon;
     }
   }
 

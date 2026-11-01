@@ -1,0 +1,18 @@
+<th:block th:fragment="stat(value)">
+    <td th:if="${value <= 60}" class="stat-very-low">
+        [[${value}]]
+    </td>
+    <td th:if="${value <= 80 && value > 60}" class="stat-low">
+        [[${value}]]
+    </td>
+    <td th:if="${value <= 100 && value > 80}" class="stat-medium">
+        [[${value}]]
+    </td>
+    <td th:if="${value <= 120 && value > 100}" class="stat-high">
+        [[${value}]]
+    </td>
+    <td th:if="${value > 120}" class="stat-very-high">
+        [[${value}]]
+    </td>
+
+</th:block>

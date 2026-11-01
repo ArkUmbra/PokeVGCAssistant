@@ -149,9 +149,14 @@ public class Neo4jClientTest {
   @Test
   public void testScrapeAndStoreAllPokemonForChampions() {
     var generator = new MasterDataCatalogGenerator();
-    for (Pokemon pokemon : generator.generateFor(Game.Champions).getAllPokemon()) {
-      neo4jClient.storePokemon(pokemon);
-    }
+    var pokedex = generator.generateFor(Game.Champions);
+
+    neo4jClient.storePokedex(pokedex);
+
+//    for (Pokemon pokemon : generator.generateFor(Game.Champions).getAllPokemon()) {
+//      System.out.println(pokemon);
+//      neo4jClient.storePokemon(pokemon);
+//    }
   }
 
   @Test

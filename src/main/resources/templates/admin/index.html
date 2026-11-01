@@ -1,0 +1,169 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title>Admin Dashboard - PokeSearcher</title>
+    <div th:replace="~{fragments/header}" />
+</head>
+<body style="padding-bottom: 90px;">
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pt-3">
+        <h2>Admin Dashboard</h2>
+        <span class="badge bg-secondary fs-6">Data Management</span>
+    </div>
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${warningMessage}" class="alert alert-warning alert-dismissible fade show" role="alert">
+        <span th:text="${warningMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${lastCompletedMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Done:</strong> <span th:text="${lastCompletedMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${lastErrorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> <span th:text="${lastErrorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Live Running Task Alert -->
+    <div id="runningAlert" class="alert alert-info d-flex align-items-center" role="alert"
+         th:style="${isRunning ? '' : 'display: none !important;'}">
+        <div class="spinner-border spinner-border-sm me-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div>
+            <strong>Task In Progress:</strong>
+            <span id="currentTaskText" th:text="${currentTask}"></span> &mdash;
+            <span id="statusMessageText" th:text="${statusMessage}"></span>
+        </div>
+    </div>
+
+    <!-- Database Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-body-secondary">Database Pokémon Count</h6>
+                    <h3 class="card-title text-primary" id="pokemonCountText" th:text="${pokemonCount}">0</h3>
+                    <p class="card-text text-muted small">Total Pokémon nodes currently stored in Neo4j.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-body-secondary">Database Abilities Count</h6>
+                    <h3 class="card-title text-info" id="abilityCountText" th:text="${abilityCount}">0</h3>
+                    <p class="card-text text-muted small">Total Ability nodes currently stored in Neo4j.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <h4>Scraping Operations</h4>
+    <p class="text-muted">Trigger data scraping and synchronization from Serebii directly into the Neo4j database.</p>
+
+    <div class="row mt-3">
+        <!-- Refresh Whole Dataset -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    Refresh Whole Dataset
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <p class="card-text">
+                            Scrapes the <strong>Champions Serebii Pokédex</strong> and stores all Pokémon, forms, base stats, types, and pokedex region numbers into the Neo4j database.
+                        </p>
+                        <p class="card-text text-muted small">
+                            Also ensures constant enum metadata (TypeValue, PokedexRegion, AttackCategory, etc.) is initialized.
+                        </p>
+                    </div>
+                    <form th:action="@{/admin/refresh-dataset}" method="post" class="mt-3 action-form"
+                          onsubmit="return confirm('Are you sure you want to refresh the whole dataset? This will scrape the Champions Pokédex from Serebii. Proceed?');">
+                        <button type="submit" class="btn btn-warning w-100 action-btn" th:disabled="${isRunning}">
+                            Refresh Whole Dataset
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrape All Abilities -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-info">
+                <div class="card-header bg-info text-dark fw-bold">
+                    Scrape All Abilities
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <p class="card-text">
+                            Scrapes all abilities from the <strong>Serebii AbilityDex</strong>, along with their in-game descriptions and names, and stores them into Neo4j.
+                        </p>
+                        <p class="card-text text-muted small">
+                            Applies corrections for missing Japanese ability names after completion.
+                        </p>
+                    </div>
+                    <form th:action="@{/admin/scrape-abilities}" method="post" class="mt-3 action-form"
+                          onsubmit="return confirm('Are you sure you want to scrape all abilities from Serebii? Proceed?');">
+                        <button type="submit" class="btn btn-info w-100 action-btn" th:disabled="${isRunning}">
+                            Scrape All Abilities
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/headerNav}" />
+</div>
+
+<script>
+    let wasRunning = /*[[${isRunning}]]*/ false;
+
+    function pollStatus() {
+        fetch('/admin/status')
+            .then(res => res.json())
+            .then(data => {
+                const runningAlert = document.getElementById('runningAlert');
+                const currentTaskText = document.getElementById('currentTaskText');
+                const statusMessageText = document.getElementById('statusMessageText');
+                const actionButtons = document.querySelectorAll('.action-btn');
+                const pokeCount = document.getElementById('pokemonCountText');
+                const abilityCount = document.getElementById('abilityCountText');
+
+                if (pokeCount && data.pokemonCount !== undefined) pokeCount.innerText = data.pokemonCount;
+                if (abilityCount && data.abilityCount !== undefined) abilityCount.innerText = data.abilityCount;
+
+                if (data.running) {
+                    wasRunning = true;
+                    if (runningAlert) runningAlert.style.setProperty('display', 'flex', 'important');
+                    if (currentTaskText) currentTaskText.innerText = data.currentTask || '';
+                    if (statusMessageText) statusMessageText.innerText = data.statusMessage || '';
+                    actionButtons.forEach(btn => btn.disabled = true);
+                } else {
+                    if (wasRunning) {
+                        // Task just completed! Reload to display completion alert and fresh data
+                        window.location.reload();
+                        return;
+                    }
+                    if (runningAlert) runningAlert.style.setProperty('display', 'none', 'important');
+                    actionButtons.forEach(btn => btn.disabled = false);
+                }
+            })
+            .catch(err => console.error("Status poll error:", err));
+    }
+
+    // Check status every 2.5 seconds
+    setInterval(pollStatus, 2500);
+</script>
+
+</body>
+</html>

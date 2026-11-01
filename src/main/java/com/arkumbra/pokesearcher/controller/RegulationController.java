@@ -75,7 +75,16 @@ public class RegulationController {
     return "redirect:/regulation";
   }
 
+  @PostMapping("/{id}/delete")
+  public String deleteRegulation(@PathVariable("id") String id) {
+    neo4jClient.deleteRegulation(id);
+    return "redirect:/regulation";
+  }
 
-
+  @PostMapping("/delete")
+  public String deleteRegulationByParam(@RequestParam("id") String id) {
+    neo4jClient.deleteRegulation(id);
+    return "redirect:/regulation";
+  }
 
 }
