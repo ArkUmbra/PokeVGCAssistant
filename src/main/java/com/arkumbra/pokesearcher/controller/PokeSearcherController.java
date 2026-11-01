@@ -87,12 +87,4 @@ public class PokeSearcherController {
     return "search-by-name";
   }
 
-  @GetMapping("/regulation/{regulationId}")
-  public String getRegulationDetail(Model model, @PathVariable("regulationId") String regulationId) {
-
-    RegulationDetail regulationDetail = neo4jClient.getRegulationDetail(regulationId);
-    model.addAttribute("regulationDetail", regulationDetail);
-    return "regulation-detail";
-  }
-
 }

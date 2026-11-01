@@ -226,9 +226,9 @@ public class NewNeo4jClient implements AutoCloseable {
         """
         MATCH (r:Regulation {id: $regulationId})
         UNWIND $pokemonList AS item
-        OPTIONAL MATCH (p1:Pokemon)-[d:IN_DEX]->(:PokedexRegion {label: 'National'})
+        OPTIONAL MERGE (p1:Pokemon)-[d:IN_DEX]->(:PokedexRegion {label: 'National'})
           WHERE d.num = item.dexNumber
-        OPTIONAL MATCH (p2:Pokemon)-[:NAMED]->(n:Name)
+        OPTIONAL MERGE (p2:Pokemon)-[:NAMED]->(n:Name)
           WHERE n.englishLower = item.nameLower
         WITH r, item, coalesce(p1, p2) AS p
         WHERE p IS NOT NULL
@@ -300,10 +300,24 @@ public class NewNeo4jClient implements AutoCloseable {
         """
         MATCH (r:Regulation {id: $id})
         MATCH (r)-[:NAMED]->(n:Name)
+        OPTIONAL MATCH (r)-[repRel:PERMITTED]->(rep:Pokemon)-[:NAMED]->(repName:Name)
+        WHERE (
+          (r.representativePokemonId CONTAINS '-'
+           AND repName.english = split(r.representativePokemonId, '-')[0]
+           AND repRel.variant = split(r.representativePokemonId, '-')[1])
+          OR
+          (NOT r.representativePokemonId CONTAINS '-'
+           AND repName.english = r.representativePokemonId
+           AND (repRel.variant = '' OR repRel.variant IS NULL))
+        )
         RETURN r.id, n.english, r.startDate, r.endDate,
                r.numberOfRestricted, r.setLevel, r.itemsAllowed, r.duplicateItemsAllowed,
                r.totalTime, r.playerTime, r.previewTime, r.turnTime,
-               r.eligiblePokemonUrl, r.spriteSheetUrl, r.representativePokemonId, r.representativeSpriteUrl
+               r.eligiblePokemonUrl, coalesce(r.spriteSheetUrl, ''),
+               r.representativePokemonId,
+               coalesce(r.representativeSpriteUrl, r.spriteSheetUrl, '') AS representativeSpriteUrl,
+               coalesce(repRel.spriteBgSize, r.representativeSpriteBgSize, '') AS repSpriteBgSize,
+               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition
         """;
 
     String pokemonQuery =
@@ -311,9 +325,9 @@ public class NewNeo4jClient implements AutoCloseable {
         MATCH (r:Regulation {id: $id})-[rel:PERMITTED]->(p:Pokemon)
         MATCH (p)-[:NAMED]->(n:Name)
         OPTIONAL MATCH (p)-[d:IN_DEX]->(:PokedexRegion {label: 'National'})
-        RETURN p.id, n.english, d.num AS dexNumber,
+        RETURN p.id, n.english, coalesce(rel.dexNumber, d.num, -1) AS dexNumber,
                rel.label, rel.variant, rel.spriteBgSize, rel.spritePosition, rel.imageUrl
-        ORDER BY dexNumber
+        ORDER BY dexNumber, n.english, rel.variant
         """;
 
     var params = parameters("id", id);
@@ -352,21 +366,59 @@ public class NewNeo4jClient implements AutoCloseable {
             numRestricted, setLevel, itemsAllowed, dupItems, battleTimers
         );
 
+        String repPokemonId = rulesRecord.get(14).isNull() ? "" : rulesRecord.get(14).asString("");
+        String repSpriteUrl = rulesRecord.get(15).isNull() ? "" : rulesRecord.get(15).asString("");
+        String repBgSize    = rulesRecord.get(16).isNull() ? "" : rulesRecord.get(16).asString("");
+        String repPosition  = rulesRecord.get(17).isNull() ? "" : rulesRecord.get(17).asString("");
+
+        rules.setRepresentativePokemonId(repPokemonId);
+        rules.setRepresentativeSpriteUrl(repSpriteUrl);
+        rules.setRepresentativeSpriteBgSize(repBgSize);
+        rules.setRepresentativeSpritePosition(repPosition);
+
         // Build eligible pokemon list from PERMITTED relationships
         List<PokemonWithSpriteRef> mons = new ArrayList<>();
         var pokemonResult = tx.run(pokemonQuery, params);
         while (pokemonResult.hasNext()) {
           Record r = pokemonResult.next();
-          int dexNumber       = r.get("dexNumber").asInt(-1);
+          String pokemonId    = r.get(0).isNull() ? "" : r.get(0).asString("");
           String name         = r.get(1).asString("");
-          String variant      = r.get(4).asString("");
-          String spriteBgSize = r.get(5).asString("");
-          String spritePos    = r.get(6).asString("");
-          String imageUrl     = r.get(7).asString("");
+          int dexNumber       = r.get(2).asInt(-1);
+          String label        = r.get(3).isNull() ? "" : r.get(3).asString("");
+          String variant      = r.get(4).isNull() ? "" : r.get(4).asString("");
+          String spriteBgSize = r.get(5).isNull() ? "" : r.get(5).asString("");
+          String spritePos    = r.get(6).isNull() ? "" : r.get(6).asString("");
+          String imageUrl     = r.get(7).isNull() ? "" : r.get(7).asString("");
+
+          boolean isRestricted = "restricted".equalsIgnoreCase(label);
+          String monImageUrl = (imageUrl != null && !imageUrl.isBlank()) ? imageUrl : spriteSheetUrl;
 
           mons.add(new PokemonWithSpriteRef(
-              dexNumber, name, variant, spriteBgSize, spritePos, imageUrl
+              dexNumber, name, variant, spriteBgSize, spritePos, monImageUrl, pokemonId, isRestricted
           ));
+        }
+
+        // Fallback to resolve representative sprite from mons if not fully populated
+        if ((rules.getRepresentativeSpriteBgSize() == null || rules.getRepresentativeSpriteBgSize().isBlank()
+            || rules.getRepresentativeSpritePosition() == null || rules.getRepresentativeSpritePosition().isBlank())
+            && rules.getRepresentativePokemonId() != null && !rules.getRepresentativePokemonId().isBlank()) {
+          for (PokemonWithSpriteRef mon : mons) {
+            String monKey = (mon.variant() != null && !mon.variant().isBlank())
+                ? mon.name() + "-" + mon.variant()
+                : mon.name();
+            if (monKey.equalsIgnoreCase(rules.getRepresentativePokemonId()) || mon.name().equalsIgnoreCase(rules.getRepresentativePokemonId())) {
+              if (rules.getRepresentativeSpriteBgSize() == null || rules.getRepresentativeSpriteBgSize().isBlank()) {
+                rules.setRepresentativeSpriteBgSize(mon.spriteBgSize());
+              }
+              if (rules.getRepresentativeSpritePosition() == null || rules.getRepresentativeSpritePosition().isBlank()) {
+                rules.setRepresentativeSpritePosition(mon.spritePosition());
+              }
+              if (rules.getRepresentativeSpriteUrl() == null || rules.getRepresentativeSpriteUrl().isBlank()) {
+                rules.setRepresentativeSpriteUrl(spriteSheetUrl);
+              }
+              break;
+            }
+          }
         }
 
         RegulationEligiblePokemon eligiblePokemon =

@@ -3,6 +3,7 @@ package com.arkumbra.pokesearcher.controller;
 import com.arkumbra.pokesearcher.controller.model.ScrapeRegulationUrlRequest;
 import com.arkumbra.pokesearcher.homenews.PokemonChampionsEligiblePokemonWebAppScraper;
 import com.arkumbra.pokesearcher.homenews.PokemonHomeNewsRegulationScraper;
+import com.arkumbra.pokesearcher.model.PokemonWithSpriteRef;
 import com.arkumbra.pokesearcher.model.RegulationEligiblePokemon;
 import com.arkumbra.pokesearcher.neo4jnew.NewNeo4jClient;
 import com.arkumbra.pokesearcher.scraper.Regulation;
@@ -12,6 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
+
+import java.util.Collections;
+import java.util.List;
 
 @Controller
 @RequestMapping("/regulation")
@@ -73,6 +77,41 @@ public class RegulationController {
     neo4jClient.storeRegulation(regulation);
 
     return "redirect:/regulation";
+  }
+
+  @GetMapping("/{id}")
+  public String viewRegulation(@PathVariable("id") String id, Model model) {
+    Regulation regulation = neo4jClient.getRegulationById(id);
+    if (regulation == null) {
+      return "redirect:/regulation";
+    }
+
+    RegulationRules rules = regulation.regulationRules();
+    RegulationEligiblePokemon eligiblePokemon = regulation.eligiblePokemon();
+
+    List<PokemonWithSpriteRef> allMons = eligiblePokemon != null && eligiblePokemon.mons() != null
+        ? eligiblePokemon.mons()
+        : Collections.emptyList();
+
+    List<PokemonWithSpriteRef> restrictedMons = allMons.stream()
+        .filter(PokemonWithSpriteRef::restricted)
+        .toList();
+
+    List<PokemonWithSpriteRef> standardMons = allMons.stream()
+        .filter(m -> !m.restricted())
+        .toList();
+
+    model.addAttribute("regulation", regulation);
+    model.addAttribute("rules", rules);
+    model.addAttribute("eligiblePokemon", eligiblePokemon);
+    model.addAttribute("spriteSheetUrl", eligiblePokemon != null ? eligiblePokemon.spriteSheetUrl() : "");
+    model.addAttribute("allPokemon", allMons);
+    model.addAttribute("restrictedPokemon", restrictedMons);
+    model.addAttribute("standardPokemon", standardMons);
+    model.addAttribute("totalPokemonCount", allMons.size());
+    model.addAttribute("hasRestricted", !restrictedMons.isEmpty() || (rules != null && rules.getNumberOfRestricted() > 0));
+
+    return "regulation/detail";
   }
 
   @PostMapping("/{id}/delete")

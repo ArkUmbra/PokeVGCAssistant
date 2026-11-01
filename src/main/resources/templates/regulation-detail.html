@@ -1,37 +1,124 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
 <head>
-    <title th:text="${regulationDetail.regulationName}">Regulation Details</title>
+    <title th:text="${rules != null ? rules.regulationName : (regulationDetail != null ? regulationDetail.regulationName : 'Regulation Details')}">Regulation Details</title>
 
     <div th:replace="~{fragments/header}" />
 </head>
-<body class="container">
+<body>
 
+<div class="container pt-3 pb-5">
 
-    <h3 th:text="${regulationDetail.regulationName}" />
+    <!-- Top Action / Breadcrumb Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="/regulation" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Regulations
+        </a>
+    </div>
 
-    <div style="width:470px">
-        <div class="row">
-            <div class="col" th:text="Schedule" />
+    <!-- Prominent Hero Section: Representative Pokemon & Regulation Overview -->
+    <div class="card mb-4 border-secondary bg-dark-subtle shadow-sm" th:if="${rules != null}">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <!-- Representative Pokemon Display -->
+                <div class="col-md-auto text-center mb-3 mb-md-0"
+                     th:if="${rules.representativeSpriteUrl != null and !#strings.isEmpty(rules.representativeSpriteUrl)}">
+                    <div style="width: 140px; height: 140px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.15); margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                        <div th:style="|width: 128px; height: 128px; background-image: url('${rules.representativeSpriteUrl}'); background-size: ${rules.representativeSpriteBgSize}; background-position: ${rules.representativeSpritePosition}; background-repeat: no-repeat;|">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-primary fs-6"
+                              th:if="${rules.representativePokemonId != null and !#strings.isEmpty(rules.representativePokemonId)}"
+                              th:text="${rules.representativePokemonId}">
+                        </span>
+                    </div>
+                    <div class="text-body-secondary small mt-1">Representative Pokémon</div>
+                </div>
 
-            <div class="col-8" th:text="${regulationDetail.schedule.startTime + ' ~ ' + regulationDetail.schedule.endTime}" />
+                <!-- Regulation Title and Summary Info -->
+                <div class="col-md">
+                    <h2 class="card-title fw-bold text-light mb-1" th:text="${rules.regulationName}"></h2>
+                    <p class="text-secondary small mb-2"
+                       th:if="${rules.id != null and rules.id != rules.regulationName}"
+                       th:text="|ID: ${rules.id}|">
+                    </p>
+
+                    <p class="card-text mb-3" th:if="${rules.schedule != null}">
+                        <span class="text-info fw-semibold">📅 Schedule: </span>
+                        <span class="text-light" th:text="|${rules.schedule.startTime} ~ ${rules.schedule.endTime}|"></span>
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-secondary py-2 px-3 fs-7"
+                              th:text="|Level ${rules.setLevel != null ? rules.setLevel : 50}|">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.numberOfRestricted > 0} ? 'bg-warning text-dark' : 'bg-success text-white'"
+                              th:text="|${rules.numberOfRestricted} Restricted Mons Permitted|">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.itemsAllowed} ? 'bg-info text-dark' : 'bg-secondary'"
+                              th:text="${rules.itemsAllowed ? 'Held Items Allowed' : 'No Items Allowed'}">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.duplicateItemsAllowed} ? 'bg-info text-dark' : 'bg-secondary'"
+                              th:text="${rules.duplicateItemsAllowed ? 'Duplicate Items Allowed' : 'Duplicate Items Not Allowed'}">
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
-
     </div>
 
-    <div th:with="pokemonSummaries=${regulationDetail.restrictedPokemon}" style="margin-top: 25px">
-        <h3 th:text="'Restricted Pokemon - ' + ${regulationDetail.numberOfRestricted + ' permitted'}"></h3>
-
-        <div th:replace="fragments/pokemonSummaryList" />
+    <!-- Available Pokemon Grid (if allPokemon provided) -->
+    <div class="mb-4" th:if="${allPokemon != null and !#lists.isEmpty(allPokemon)}">
+        <h3 class="mb-3">Available Pokémon (<span th:text="${#lists.size(allPokemon)}"></span>)</h3>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2">
+            <div th:each="pokemon : ${allPokemon}" class="col">
+                <div class="card h-100 border-secondary bg-dark-subtle p-2 d-flex flex-row align-items-center gap-2 regulation-hover-bg">
+                    <div th:style="|width: 40px; height: 40px; background-image: url('${pokemon.imageUrl != null and !#strings.isEmpty(pokemon.imageUrl) ? pokemon.imageUrl : spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
+                    </div>
+                    <div class="overflow-hidden flex-grow-1">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="text-secondary small fw-bold" th:text="${pokemon.formattedDexNumber}"></span>
+                            <span th:if="${pokemon.restricted}" class="badge bg-warning text-dark small" style="font-size: 0.65rem;">Restricted</span>
+                        </div>
+                        <div class="text-truncate">
+                            <span class="text-light fw-semibold" th:text="${pokemon.name}"></span>
+                        </div>
+                        <div class="text-truncate text-body-secondary small"
+                             th:if="${pokemon.variant != null and !#strings.isEmpty(pokemon.variant)}"
+                             th:text="${pokemon.variant}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div th:with="pokemonSummaries=${regulationDetail.validPokemon}" style="margin-top: 25px">
-        <h3>Unrestricted Pokemon</h3>
-
-        <div th:replace="fragments/pokemonSummaryList" />
+    <!-- Legacy fallback if regulationDetail provided -->
+    <div th:if="${regulationDetail != null}">
+        <h3 th:text="${regulationDetail.regulationName}"></h3>
+        <div style="width:470px">
+            <div class="row">
+                <div class="col">Schedule</div>
+                <div class="col-8" th:text="${regulationDetail.schedule.startTime + ' ~ ' + regulationDetail.schedule.endTime}"></div>
+            </div>
+        </div>
+        <div th:with="pokemonSummaries=${regulationDetail.restrictedPokemon}" style="margin-top: 25px">
+            <h3 th:text="'Restricted Pokemon - ' + ${regulationDetail.numberOfRestricted + ' permitted'}"></h3>
+            <div th:replace="fragments/pokemonSummaryList" />
+        </div>
+        <div th:with="pokemonSummaries=${regulationDetail.validPokemon}" style="margin-top: 25px">
+            <h3>Unrestricted Pokemon</h3>
+            <div th:replace="fragments/pokemonSummaryList" />
+        </div>
     </div>
 
     <div th:replace="~{fragments/headerNav}" />
+
+</div>
 
 </body>
 </html>

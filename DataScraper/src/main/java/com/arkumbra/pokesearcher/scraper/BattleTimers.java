@@ -118,4 +118,32 @@ public class BattleTimers {
       this.turnTime = turnTimeDuration.toSeconds();
     }
   }
+
+  private String formatTime(long seconds) {
+    if (seconds <= 0) return "None";
+    if (seconds >= 60 && seconds % 60 == 0) {
+      return (seconds / 60) + " min";
+    } else if (seconds >= 60) {
+      long min = seconds / 60;
+      long sec = seconds % 60;
+      return min + " min " + sec + " sec";
+    }
+    return seconds + " sec";
+  }
+
+  public String getFormattedTotalTime() {
+    return formatTime(totalTime);
+  }
+
+  public String getFormattedPlayerTime() {
+    return formatTime(playerTime);
+  }
+
+  public String getFormattedPreviewTime() {
+    return formatTime(previewTime);
+  }
+
+  public String getFormattedTurnTime() {
+    return formatTime(turnTime);
+  }
 }

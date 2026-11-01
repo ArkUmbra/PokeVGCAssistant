@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <title th:text="${rules.regulationName} + ' - Regulation Details'">Regulation Details</title>
+
+    <div th:replace="~{fragments/header}" />
+</head>
+<body>
+
+<div class="container pt-3 pb-5">
+
+    <!-- Top Action / Breadcrumb Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="/regulation" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Regulations
+        </a>
+        <div class="d-flex gap-2">
+            <a th:if="${rules.eligiblePokemonUrl != null and !#strings.isEmpty(rules.eligiblePokemonUrl)}"
+               th:href="${rules.eligiblePokemonUrl}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn btn-outline-info btn-sm">
+                Official Pokémon Web App &nearr;
+            </a>
+            <form th:action="@{/regulation/{id}/delete(id=${rules.id})}"
+                  method="post"
+                  style="display: inline;"
+                  th:data-reg-name="${rules.regulationName}"
+                  onsubmit="return confirm('Are you sure you want to delete ' + (this.getAttribute('data-reg-name') || 'this regulation') + '?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Prominent Hero Section: Representative Pokemon & Regulation Overview -->
+    <div class="card mb-4 border-secondary bg-dark-subtle shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <!-- Representative Pokemon Display -->
+                <div class="col-md-auto text-center mb-3 mb-md-0"
+                     th:if="${rules.representativeSpriteUrl != null and !#strings.isEmpty(rules.representativeSpriteUrl)}">
+                    <div style="width: 140px; height: 140px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.15); margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                        <div th:style="|width: 128px; height: 128px; background-image: url('${rules.representativeSpriteUrl}'); background-size: ${rules.representativeSpriteBgSize}; background-position: ${rules.representativeSpritePosition}; background-repeat: no-repeat;|">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regulation Title and Summary Info -->
+                <div class="col-md">
+                    <h2 class="card-title fw-bold text-light mb-1" th:text="${rules.regulationName}"></h2>
+                    <p class="text-secondary small mb-2"
+                       th:if="${rules.id != null and rules.id != rules.regulationName}"
+                       th:text="|ID: ${rules.id}|">
+                    </p>
+
+                    <p class="card-text mb-3" th:if="${rules.schedule != null}">
+                        <span class="text-info fw-semibold">📅 Schedule: </span>
+                        <span class="text-light" th:text="|${rules.schedule.startTime} ~ ${rules.schedule.endTime}|"></span>
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-secondary py-2 px-3 fs-7"
+                              th:text="|Level ${rules.setLevel != null ? rules.setLevel : 50}|">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.numberOfRestricted > 0} ? 'bg-warning text-dark' : 'bg-success text-white'"
+                              th:text="|${rules.numberOfRestricted} Restricted Mons Permitted|">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.itemsAllowed} ? 'bg-info text-dark' : 'bg-secondary'"
+                              th:text="${rules.itemsAllowed ? 'Held Items Allowed' : 'No Items Allowed'}">
+                        </span>
+                        <span class="badge py-2 px-3 fs-7"
+                              th:classappend="${rules.duplicateItemsAllowed} ? 'bg-info text-dark' : 'bg-secondary'"
+                              th:text="${rules.duplicateItemsAllowed ? 'Duplicate Items Allowed' : 'Duplicate Items Not Allowed'}">
+                        </span>
+                        <span class="badge bg-primary py-2 px-3 fs-7"
+                              th:text="|${totalPokemonCount} Available Pokémon|">
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regulation Rules & Battle Timers Section -->
+    <div class="row g-3 mb-4">
+        <!-- Battle Format & Rules -->
+        <div class="col-md-6">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-dark fw-semibold text-light">
+                    📋 Regulation Rules
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Restricted Pokémon</span>
+                            <span class="badge bg-warning text-dark fw-bold"
+                                  th:if="${rules.numberOfRestricted > 0}"
+                                  th:text="|${rules.numberOfRestricted} per team|">
+                            </span>
+                            <span class="badge bg-secondary"
+                                  th:if="${rules.numberOfRestricted == 0}">
+                                0 permitted
+                            </span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Set Level</span>
+                            <span class="fw-semibold text-light"
+                                  th:text="|Level ${rules.setLevel != null ? rules.setLevel : 50}|">
+                                Level 50
+                            </span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Held Items</span>
+                            <span class="badge"
+                                  th:classappend="${rules.itemsAllowed ? 'bg-success' : 'bg-danger'}"
+                                  th:text="${rules.itemsAllowed ? 'Permitted' : 'Banned'}">
+                            </span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Duplicate Items</span>
+                            <span class="badge"
+                                  th:classappend="${rules.duplicateItemsAllowed ? 'bg-warning text-dark' : 'bg-secondary'}"
+                                  th:text="${rules.duplicateItemsAllowed ? 'Allowed' : 'Disallowed (Item Clause)'}">
+                            </span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center"
+                            th:if="${rules.eligiblePokemonUrl != null and !#strings.isEmpty(rules.eligiblePokemonUrl)}">
+                            <span>Official Source</span>
+                            <a th:href="${rules.eligiblePokemonUrl}" target="_blank" rel="noopener noreferrer" class="text-info small text-decoration-none">
+                                View official page &nearr;
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Battle Timers -->
+        <div class="col-md-6">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-dark fw-semibold text-light">
+                    ⏱️ Battle Timers
+                </div>
+                <div class="card-body" th:if="${rules.battleTimers != null}">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Total Battle Time</span>
+                            <span class="fw-semibold text-info" th:text="${rules.battleTimers.formattedTotalTime}"></span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Player Time (Your Time)</span>
+                            <span class="fw-semibold text-info" th:text="${rules.battleTimers.formattedPlayerTime}"></span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Team Preview Time</span>
+                            <span class="fw-semibold text-info" th:text="${rules.battleTimers.formattedPreviewTime}"></span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light d-flex justify-content-between align-items-center">
+                            <span>Turn Time</span>
+                            <span class="fw-semibold text-info" th:text="${rules.battleTimers.formattedTurnTime}"></span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body text-secondary" th:if="${rules.battleTimers == null}">
+                    No battle timers specified.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Pokemon Section -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h3 class="d-inline-block me-2 mb-0">Available Pokémon</h3>
+                <span class="badge bg-secondary fs-6" id="visibleCount" th:text="${totalPokemonCount}"></span>
+            </div>
+
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <!-- Filter Buttons (All / Restricted / Standard) -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="Type filter"
+                     th:if="${hasRestricted and !#lists.isEmpty(restrictedPokemon)}">
+                    <button type="button" class="btn btn-outline-primary active" id="filterBtnAll" onclick="setFilterType('all')">
+                        All (<span th:text="${totalPokemonCount}"></span>)
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" id="filterBtnRestricted" onclick="setFilterType('restricted')">
+                        Restricted (<span th:text="${#lists.size(restrictedPokemon)}"></span>)
+                    </button>
+                    <button type="button" class="btn btn-outline-success" id="filterBtnStandard" onclick="setFilterType('standard')">
+                        Standard (<span th:text="${#lists.size(standardPokemon)}"></span>)
+                    </button>
+                </div>
+
+                <!-- Instant Live Search Box -->
+                <input type="text"
+                       id="pokemonSearchInput"
+                       class="form-control form-control-sm"
+                       style="width: 220px;"
+                       placeholder="Filter Pokémon..."
+                       oninput="filterPokemonList()" />
+            </div>
+        </div>
+
+        <!-- Pokemon Grid -->
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="pokemonGrid">
+            <div th:each="pokemon : ${allPokemon}"
+                 class="col pokemon-item"
+                 th:data-name="${pokemon.name.toLowerCase()}"
+                 th:data-variant="${pokemon.variant != null ? pokemon.variant.toLowerCase() : ''}"
+                 th:data-dex="${pokemon.dexNumber}"
+                 th:data-restricted="${pokemon.restricted}">
+                <div class="card h-100 border-secondary bg-dark-subtle p-2 d-flex flex-row align-items-center gap-2 regulation-hover-bg">
+                    <div th:style="|width: 40px; height: 40px; background-image: url('${pokemon.imageUrl != null and !#strings.isEmpty(pokemon.imageUrl) ? pokemon.imageUrl : spriteSheetUrl}'); background-size: ${pokemon.spriteBgSize}; background-position: ${pokemon.spritePosition}; flex-shrink: 0;|">
+                    </div>
+                    <div class="overflow-hidden flex-grow-1">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="text-secondary small fw-bold" th:text="${pokemon.formattedDexNumber}"></span>
+                            <span th:if="${pokemon.restricted}" class="badge bg-warning text-dark small" style="font-size: 0.65rem;">Restricted</span>
+                        </div>
+                        <div class="text-truncate">
+                            <a th:if="${pokemon.pokemonId != null and !#strings.isEmpty(pokemon.pokemonId) and #strings.startsWith(pokemon.pokemonId, 'http')}"
+                               th:href="@{/pokemon/{id}(id=${pokemon.pokemonId})}"
+                               class="text-decoration-none text-light fw-semibold"
+                               th:text="${pokemon.name}">
+                            </a>
+                            <span th:unless="${pokemon.pokemonId != null and !#strings.isEmpty(pokemon.pokemonId) and #strings.startsWith(pokemon.pokemonId, 'http')}"
+                                  class="text-light fw-semibold"
+                                  th:text="${pokemon.name}">
+                            </span>
+                        </div>
+                        <div class="text-truncate text-body-secondary small"
+                             th:if="${pokemon.variant != null and !#strings.isEmpty(pokemon.variant)}"
+                             th:text="${pokemon.variant}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="noResultsMsg" class="alert alert-secondary text-center mt-3" style="display: none;">
+            No Pokémon found matching your filter.
+        </div>
+    </div>
+
+    <!-- Live Filter Script -->
+    <script>
+        let currentTypeFilter = 'all';
+
+        function setFilterType(type) {
+            currentTypeFilter = type;
+            const btnAll = document.getElementById('filterBtnAll');
+            const btnRes = document.getElementById('filterBtnRestricted');
+            const btnStd = document.getElementById('filterBtnStandard');
+
+            if (btnAll) btnAll.classList.remove('active');
+            if (btnRes) btnRes.classList.remove('active');
+            if (btnStd) btnStd.classList.remove('active');
+
+            if (type === 'all' && btnAll) btnAll.classList.add('active');
+            if (type === 'restricted' && btnRes) btnRes.classList.add('active');
+            if (type === 'standard' && btnStd) btnStd.classList.add('active');
+
+            filterPokemonList();
+        }
+
+        function filterPokemonList() {
+            const query = (document.getElementById('pokemonSearchInput')?.value || '').toLowerCase().trim();
+            const items = document.querySelectorAll('#pokemonGrid .pokemon-item');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const name = item.getAttribute('data-name') || '';
+                const variant = item.getAttribute('data-variant') || '';
+                const dex = item.getAttribute('data-dex') || '';
+                const isRestricted = item.getAttribute('data-restricted') === 'true';
+
+                // Check type filter (all / restricted / standard)
+                let matchesType = true;
+                if (currentTypeFilter === 'restricted' && !isRestricted) matchesType = false;
+                if (currentTypeFilter === 'standard' && isRestricted) matchesType = false;
+
+                // Check text query
+                let matchesQuery = true;
+                if (query.length > 0) {
+                    matchesQuery = name.includes(query) || variant.includes(query) || dex.includes(query) || ('#' + dex).includes(query);
+                }
+
+                if (matchesType && matchesQuery) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            const countEl = document.getElementById('visibleCount');
+            if (countEl) countEl.innerText = visibleCount;
+
+            const noResults = document.getElementById('noResultsMsg');
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+    </script>
+
+    <div th:replace="~{fragments/headerNav}" />
+
+</div>
+
+</body>
+</html>
