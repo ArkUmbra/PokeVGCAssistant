@@ -14,8 +14,13 @@ public class RegulationSummary {
   private final String representativeSpriteUrl;
   private final String representativeSpriteBgSize;
   private final String representativeSpritePosition;
+  private final boolean active;
 
   public RegulationSummary(String id, String name, ZonedDateTime startDate, ZonedDateTime endDate, int numberOfPokemon, String representativePokemonId, String representativeSpriteUrl, String representativeSpriteBgSize, String representativeSpritePosition) {
+    this(id, name, startDate, endDate, numberOfPokemon, representativePokemonId, representativeSpriteUrl, representativeSpriteBgSize, representativeSpritePosition, false);
+  }
+
+  public RegulationSummary(String id, String name, ZonedDateTime startDate, ZonedDateTime endDate, int numberOfPokemon, String representativePokemonId, String representativeSpriteUrl, String representativeSpriteBgSize, String representativeSpritePosition, boolean active) {
     this.id = id;
     this.name = name;
     this.startDate = startDate;
@@ -25,6 +30,7 @@ public class RegulationSummary {
     this.representativeSpriteUrl = representativeSpriteUrl;
     this.representativeSpriteBgSize = representativeSpriteBgSize;
     this.representativeSpritePosition = representativeSpritePosition;
+    this.active = active;
   }
 
   public String getId() {
@@ -97,6 +103,14 @@ public class RegulationSummary {
 
   public String representativeSpritePosition() {
     return representativeSpritePosition;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public boolean active() {
+    return active;
   }
 
   @Override

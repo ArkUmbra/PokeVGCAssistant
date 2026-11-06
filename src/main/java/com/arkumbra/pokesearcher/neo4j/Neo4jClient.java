@@ -701,6 +701,71 @@ public class Neo4jClient implements AutoCloseable {
     }
   }
 
+  public List<PokemonSummary> getPokemonForRegulation(String regulationId) {
+    if (regulationId == null || regulationId.isBlank() || "ALL".equalsIgnoreCase(regulationId)) {
+      return getAllPokemon();
+    }
+
+    try (var session = driver.session()) {
+      List<Record> records = session.executeRead(tx -> {
+        var query = new Query(
+            """
+            MATCH (r:Regulation {id: $regulationId})-[permitted:PERMITTED]->(pokemon:Pokemon)
+            OPTIONAL MATCH (pokemon)-[form:WITH_FORM]->(details:PokemonDetails)
+            OPTIONAL MATCH (details)-[t:OF_TYPE]->(type:TypeValue)
+            OPTIONAL MATCH (pokemon)-[rDex:IN_DEX]->(dex:PokedexRegion{label:'National'})
+            MATCH (pokemon)-[:NAMED]->(name:Name)
+            WITH coalesce(details.id, pokemon.id) AS detailId,
+                 pokemon.id AS pokeId,
+                 coalesce(rDex.num, permitted.dexNumber, -1) AS dexNum,
+                 name.english AS engName,
+                 coalesce(name.japanese, '') AS japName,
+                 coalesce(form.formName, permitted.variant, '') AS fName,
+                 collect(type.label) AS typeLabels,
+                 collect(t.index) AS typeIndices,
+                 coalesce(details.hp, 0) AS hp,
+                 coalesce(details.atk, 0) AS atk,
+                 coalesce(details.def, 0) AS def,
+                 coalesce(details.spAtk, 0) AS spAtk,
+                 coalesce(details.spDef, 0) AS spDef,
+                 coalesce(details.spe, 0) AS spe
+            RETURN DISTINCT detailId, pokeId, dexNum, engName, japName, fName,
+                   typeLabels, typeIndices,
+                   hp, atk, def, spAtk, spDef, spe
+            ORDER BY CASE WHEN dexNum = -1 THEN 99999 ELSE dexNum END, engName
+            """,
+            parameters("regulationId", regulationId)
+        );
+        var result = tx.run(query);
+        return result.list();
+      });
+
+      return records.stream()
+          .map(this::convertRecordToPokemonSummarySafe)
+          .collect(Collectors.toList());
+    }
+  }
+
+  private PokemonSummary convertRecordToPokemonSummarySafe(Record summaryRecord) {
+    String pokemonId = summaryRecord.get(1).isNull() ? "" : summaryRecord.get(1).asString();
+    int nationalDexNum = summaryRecord.get(2).isNull() ? -1 : summaryRecord.get(2).asInt();
+    String englishName = summaryRecord.get(3).isNull() ? "" : summaryRecord.get(3).asString();
+    String japaneseName = summaryRecord.get(4).isNull() ? "" : summaryRecord.get(4).asString();
+    String formName = summaryRecord.get(5).isNull() ? "" : summaryRecord.get(5).asString();
+    List<TypeValue> types = readTypeListInCorrectOrder(summaryRecord.get(6), summaryRecord.get(7));
+
+    BaseStats baseStats = new BaseStats(
+        summaryRecord.get(8).isNull() ? 0 : summaryRecord.get(8).asInt(),
+        summaryRecord.get(9).isNull() ? 0 : summaryRecord.get(9).asInt(),
+        summaryRecord.get(10).isNull() ? 0 : summaryRecord.get(10).asInt(),
+        summaryRecord.get(11).isNull() ? 0 : summaryRecord.get(11).asInt(),
+        summaryRecord.get(12).isNull() ? 0 : summaryRecord.get(12).asInt(),
+        summaryRecord.get(13).isNull() ? 0 : summaryRecord.get(13).asInt()
+    );
+
+    return new PokemonSummary(pokemonId, new Name(englishName, japaneseName), formName, types, baseStats, nationalDexNum);
+  }
+
   private PokemonSummary convertRecordToPokemonSummary(Record summaryRecord) {
     // index 0 is fully qualified name - don't need it in the result, just using it for distinct()
     String pokemonId = summaryRecord.get(1).asString();
@@ -723,11 +788,22 @@ public class Neo4jClient implements AutoCloseable {
   }
 
   private List<TypeValue> readTypeListInCorrectOrder(Value typeLabels, Value typeIndices) {
-    List<TypeValue> unordered = typeLabels.asList(rawType -> {
-      return TypeValue.valueOf(rawType.asString());
-    });
+    if (typeLabels.isNull() || typeLabels.isEmpty()) {
+      return Collections.emptyList();
+    }
 
-    if (typeIndices.isEmpty()) {
+    List<TypeValue> unordered = typeLabels.asList(rawType -> {
+      if (rawType == null || rawType.isNull() || rawType.asString().isBlank()) {
+        return null;
+      }
+      try {
+        return TypeValue.valueOf(rawType.asString());
+      } catch (Exception e) {
+        return null;
+      }
+    }).stream().filter(Objects::nonNull).toList();
+
+    if (typeIndices.isNull() || typeIndices.isEmpty()) {
       return unordered;
     }
 
@@ -736,10 +812,12 @@ public class Neo4jClient implements AutoCloseable {
     List<TypeValue> ordered = new ArrayList<>(unordered.size());
     unordered.forEach((unused) -> ordered.add(null));
 
-    for (int i = 0; i < typeIndices.size(); i++) {
+    for (int i = 0; i < typeIndices.size() && i < unordered.size(); i++) {
       int index = indices.get(i);
       TypeValue value = unordered.get(i);
-      ordered.set(index, value);
+      if (index >= 0 && index < ordered.size()) {
+        ordered.set(index, value);
+      }
     }
     return ordered;
   }

@@ -24,10 +24,19 @@
                 <div class="col-md-auto" th:style="|width: 128px; height: 128px; background-image: url('${regSummary.representativeSpriteUrl}'); background-size: ${regSummary.representativeSpriteBgSize}; background-position: ${regSummary.representativeSpritePosition}; flex-shrink: 0;|">
                 </div>
                 <div class="col-md-8">
-                    <h5 class="card-title" th:text="${regSummary.name + ' (' + regSummary.id + ')'}"></h5>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h5 class="card-title mb-0" th:text="${regSummary.name + ' (' + regSummary.id + ')'}"></h5>
+                        <span th:if="${regSummary.active}" class="badge bg-success">Active</span>
+                    </div>
                     <p class="card-text">[[${regSummary.startDate}]] ~ [[${regSummary.endDate}]]</p>
                     <div class="d-flex gap-2">
                         <a th:href="@{/regulation/{id}(id=${regSummary.id})}" class="btn btn-primary">View regulation</a>
+                        <form th:if="${!regSummary.active}"
+                              th:action="@{/regulation/{id}/activate(id=${regSummary.id})}"
+                              method="post"
+                              style="display: inline;">
+                            <button type="submit" class="btn btn-outline-success">Set Active</button>
+                        </form>
                         <form th:action="@{/regulation/{id}/delete(id=${regSummary.id})}"
                               method="post"
                               style="display: inline;"

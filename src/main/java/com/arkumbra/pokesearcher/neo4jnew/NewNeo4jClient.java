@@ -112,6 +112,17 @@ public class NewNeo4jClient implements AutoCloseable {
 
     try (var session = driver.session()) {
       session.executeWrite(tx -> {
+        // Check if there are other regulations or an existing active regulation
+        String checkOtherQuery = "MATCH (other:Regulation) WHERE other.id <> $id RETURN count(other) AS count";
+        var countRes = tx.run(checkOtherQuery, parameters("id", finalId));
+        long otherCount = countRes.hasNext() ? countRes.next().get("count").asLong() : 0;
+
+        String checkActiveQuery = "MATCH (activeReg:Regulation {active: true}) WHERE activeReg.id <> $id RETURN count(activeReg) AS count";
+        var activeRes = tx.run(checkActiveQuery, parameters("id", finalId));
+        long activeCount = activeRes.hasNext() ? activeRes.next().get("count").asLong() : 0;
+
+        boolean shouldBeActive = (otherCount == 0 || activeCount == 0);
+
         // 1. Upsert Regulation node and linked Name node
         String createRegQuery =
             """
@@ -134,7 +145,8 @@ public class NewNeo4jClient implements AutoCloseable {
                 r.representativePokemonId = $representativePokemonId,
                 r.representativeSpriteUrl = $representativeSpriteUrl,
                 r.representativeSpriteBgSize = $representativeSpriteBgSize,
-                r.representativeSpritePosition = $representativeSpritePosition
+                r.representativeSpritePosition = $representativeSpritePosition,
+                r.active = CASE WHEN $shouldBeActive THEN true ELSE coalesce(r.active, false) END
             """;
 
         var createRegParams = parameters(
@@ -158,7 +170,8 @@ public class NewNeo4jClient implements AutoCloseable {
                 ? rules.getRepresentativeSpriteUrl()
                 : (spriteSheetUrl != null ? spriteSheetUrl : ""),
             "representativeSpriteBgSize", rules.getRepresentativeSpriteBgSize() != null ? rules.getRepresentativeSpriteBgSize() : "",
-            "representativeSpritePosition", rules.getRepresentativeSpritePosition() != null ? rules.getRepresentativeSpritePosition() : ""
+            "representativeSpritePosition", rules.getRepresentativeSpritePosition() != null ? rules.getRepresentativeSpritePosition() : "",
+            "shouldBeActive", shouldBeActive
         );
         tx.run(createRegQuery, createRegParams);
 
@@ -317,7 +330,8 @@ public class NewNeo4jClient implements AutoCloseable {
                r.representativePokemonId,
                coalesce(r.representativeSpriteUrl, r.spriteSheetUrl, '') AS representativeSpriteUrl,
                coalesce(repRel.spriteBgSize, r.representativeSpriteBgSize, '') AS repSpriteBgSize,
-               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition
+               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition,
+               coalesce(r.active, false) AS active
         """;
 
     String pokemonQuery =
@@ -370,11 +384,13 @@ public class NewNeo4jClient implements AutoCloseable {
         String repSpriteUrl = rulesRecord.get(15).isNull() ? "" : rulesRecord.get(15).asString("");
         String repBgSize    = rulesRecord.get(16).isNull() ? "" : rulesRecord.get(16).asString("");
         String repPosition  = rulesRecord.get(17).isNull() ? "" : rulesRecord.get(17).asString("");
+        boolean isActive    = rulesRecord.size() > 18 && !rulesRecord.get(18).isNull() && rulesRecord.get(18).asBoolean(false);
 
         rules.setRepresentativePokemonId(repPokemonId);
         rules.setRepresentativeSpriteUrl(repSpriteUrl);
         rules.setRepresentativeSpriteBgSize(repBgSize);
         rules.setRepresentativeSpritePosition(repPosition);
+        rules.setActive(isActive);
 
         // Build eligible pokemon list from PERMITTED relationships
         List<PokemonWithSpriteRef> mons = new ArrayList<>();
@@ -457,7 +473,8 @@ public class NewNeo4jClient implements AutoCloseable {
                r.representativePokemonId,
                coalesce(r.representativeSpriteUrl, r.spriteSheetUrl, '') AS representativeSpriteUrl,
                coalesce(repRel.spriteBgSize, r.representativeSpriteBgSize, '') AS repSpriteBgSize,
-               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition
+               coalesce(repRel.spritePosition, r.representativeSpritePosition, '') AS repSpritePosition,
+               coalesce(r.active, false) AS active
         ORDER BY r.startDate DESC
         """;
 
@@ -476,9 +493,59 @@ public class NewNeo4jClient implements AutoCloseable {
           String representativeSpriteUrl = record.get(6).isNull() ? "" : record.get(6).asString("");
           String representativeSpriteBgSize = record.get(7).isNull() ? "" : record.get(7).asString("");
           String representativeSpritePosition = record.get(8).isNull() ? "" : record.get(8).asString("");
-          summaries.add(new RegulationSummary(id, name, start, end, pokemonCount, representativePokemonId, representativeSpriteUrl, representativeSpriteBgSize, representativeSpritePosition));
+          boolean active      = record.size() > 9 && !record.get(9).isNull() && record.get(9).asBoolean(false);
+          summaries.add(new RegulationSummary(id, name, start, end, pokemonCount, representativePokemonId, representativeSpriteUrl, representativeSpriteBgSize, representativeSpritePosition, active));
         }
         return summaries;
+      });
+    }
+  }
+
+  /**
+   * Sets the specified regulation as active and deactivates all others.
+   */
+  public boolean setActiveRegulation(String id) {
+    if (id == null || id.isBlank()) {
+      return false;
+    }
+    String query =
+        """
+        MATCH (all:Regulation)
+        SET all.active = false
+        WITH count(all) AS total
+        MATCH (r:Regulation {id: $id})
+        SET r.active = true
+        RETURN r.id
+        """;
+    try (var session = driver.session()) {
+      return session.executeWrite(tx -> {
+        var res = tx.run(query, parameters("id", id));
+        return res.hasNext();
+      });
+    }
+  }
+
+  /**
+   * Retrieves the ID of the currently active regulation.
+   * If none is explicitly marked active, falls back to the most recent regulation
+   * and sets it as active.
+   */
+  public String getActiveRegulationId() {
+    String query = "MATCH (r:Regulation {active: true}) RETURN r.id LIMIT 1";
+    String fallbackQuery = "MATCH (r:Regulation) RETURN r.id ORDER BY r.startDate DESC LIMIT 1";
+    try (var session = driver.session()) {
+      return session.executeWrite(tx -> {
+        var res = tx.run(query);
+        if (res.hasNext()) {
+          return res.next().get(0).asString();
+        }
+        var fallbackRes = tx.run(fallbackQuery);
+        if (fallbackRes.hasNext()) {
+          String fallbackId = fallbackRes.next().get(0).asString();
+          tx.run("MATCH (r:Regulation {id: $id}) SET r.active = true", parameters("id", fallbackId));
+          return fallbackId;
+        }
+        return null;
       });
     }
   }
@@ -487,6 +554,7 @@ public class NewNeo4jClient implements AutoCloseable {
    * Deletes a regulation by its ID, removing the regulation node, its PERMITTED connections
    * to eligible Pokemon, its NAMED connection, and any orphaned Name node if it is not
    * referenced by any other entity. Other regulations and Pokemon nodes remain unaffected.
+   * If the active regulation was deleted, promotes the next most recent regulation to active.
    *
    * @param id The unique regulation ID to delete
    * @return true if a regulation was deleted, false otherwise
@@ -499,13 +567,20 @@ public class NewNeo4jClient implements AutoCloseable {
     String query =
         """
         MATCH (r:Regulation {id: $id})
+        WITH r, coalesce(r.active, false) AS wasActive
         OPTIONAL MATCH (r)-[:NAMED]->(n:Name)
         OPTIONAL MATCH (other)-[:NAMED]->(n) WHERE other <> r
-        WITH r, n, count(other) AS otherCount
+        WITH r, n, wasActive, count(other) AS otherCount
         DETACH DELETE r
-        WITH n, otherCount
+        WITH n, wasActive, otherCount
         WHERE n IS NOT NULL AND otherCount = 0
         DELETE n
+        WITH wasActive
+        WHERE wasActive = true
+        MATCH (rem:Regulation)
+        WITH rem ORDER BY rem.startDate DESC LIMIT 1
+        SET rem.active = true
+        RETURN count(rem)
         """;
 
     try (var session = driver.session()) {

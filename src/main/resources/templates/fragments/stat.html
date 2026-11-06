@@ -1,5 +1,8 @@
 <th:block th:fragment="stat(value)">
-    <td th:if="${value <= 60}" class="stat-very-low">
+    <td th:if="${value <= 0}" class="text-secondary text-center">
+        -
+    </td>
+    <td th:if="${value > 0 && value <= 60}" class="stat-very-low">
         [[${value}]]
     </td>
     <td th:if="${value <= 80 && value > 60}" class="stat-low">

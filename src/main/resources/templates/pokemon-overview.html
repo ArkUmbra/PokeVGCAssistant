@@ -1,19 +1,55 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
 <head>
-    <title>All Pokemon</title>
+    <title>Pokemon</title>
 
     <div th:replace="~{fragments/header}" />
 </head>
 <body>
 
-    <div class="container">
-        <p th:text="|Showing ${numOfPokemon} Pokemon (including multiple forms)|" />
+    <div class="container pt-2 pb-5">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <h2 class="mb-0">Pokemon</h2>
+                <span class="text-secondary small" th:text="|Showing ${numOfPokemon} Pokemon (including multiple forms)|"></span>
+            </div>
 
-        <div th:replace="fragments/pokemonSummaryList" />
+            <!-- Regulation Selector Dropdown -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <label for="regulationSelect" class="form-label mb-0 fw-semibold text-nowrap">Regulation:</label>
+                <select id="regulationSelect"
+                        class="form-select form-select-sm"
+                        style="width: auto; min-width: 250px;"
+                        onchange="onRegulationChange(this.value)">
+                    <option th:each="reg : ${regulations}"
+                            th:value="${reg.id}"
+                            th:selected="${reg.id == selectedRegulationId}"
+                            th:text="${reg.name + (reg.id == activeRegulationId ? ' (Active)' : '')}">
+                    </option>
+                    <option value="ALL" th:selected="${'ALL' == selectedRegulationId}">
+                        All Pokémon (No Filter)
+                    </option>
+                </select>
+
+                <a th:if="${selectedRegulationId != null and selectedRegulationId != 'ALL'}"
+                   th:href="@{/regulation/{id}(id=${selectedRegulationId})}"
+                   class="btn btn-outline-info btn-sm text-nowrap"
+                   title="View Regulation Details">
+                    View Rules &nearr;
+                </a>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/pokemonSummaryList}" />
 
         <div th:replace="~{fragments/headerNav}" />
     </div>
+
+    <script>
+        function onRegulationChange(regId) {
+            window.location.href = '/pokemon?regulationId=' + encodeURIComponent(regId);
+        }
+    </script>
 
 </body>
 </html>

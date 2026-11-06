@@ -6,12 +6,15 @@ import com.arkumbra.pokesearcher.neo4j.Neo4jClient;
 import com.arkumbra.pokesearcher.neo4j.RegulationDetail;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameRequest;
 import com.arkumbra.pokesearcher.neo4j.search.SearchByNameResponse;
+import com.arkumbra.pokesearcher.neo4jnew.NewNeo4jClient;
+import com.arkumbra.pokesearcher.neo4jnew.RegulationSummary;
 import com.arkumbra.pokesearcher.rest.AbilityDetail;
 import com.arkumbra.pokesearcher.rest.PokemonSummary;
 import com.arkumbra.pokesearcher.scraper.Ability;
 import com.arkumbra.pokesearcher.scraper.AbilitySummary;
 import com.arkumbra.pokesearcher.scraper.RegulationRules;
 import jakarta.websocket.server.PathParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +28,11 @@ import java.util.List;
 //@RequestMapping("/pokesearcher/")
 public class PokeSearcherController {
 
-  public Neo4jClient neo4jClient = new Neo4jClient("bolt://localhost:7687", "neo4j", "password");
+  @Autowired
+  public Neo4jClient neo4jClient;
+
+  @Autowired
+  private NewNeo4jClient newNeo4jClient;
 
   @GetMapping("/ability")
   public String getAllAbilities(Model model) {
@@ -58,10 +65,36 @@ public class PokeSearcherController {
   }
 
   @GetMapping("/pokemon")
-  public String getAllPokemon(Model model) {
-    List<PokemonSummary> allPokemon = neo4jClient.getAllPokemon();
-    model.addAttribute("numOfPokemon", allPokemon.size());
-    model.addAttribute("pokemonSummaries", allPokemon);
+  public String getAllPokemon(
+      @RequestParam(value = "regulationId", required = false) String regulationId,
+      Model model
+  ) {
+    List<RegulationSummary> regSummaries = newNeo4jClient.getAllRegulationSummaries();
+    String activeRegId = newNeo4jClient.getActiveRegulationId();
+
+    String selectedRegId = regulationId;
+    if (selectedRegId == null || selectedRegId.isBlank()) {
+      if (activeRegId != null && !activeRegId.isBlank()) {
+        selectedRegId = activeRegId;
+      } else if (!regSummaries.isEmpty()) {
+        selectedRegId = regSummaries.get(0).getId();
+      } else {
+        selectedRegId = "ALL";
+      }
+    }
+
+    List<PokemonSummary> pokemon;
+    if ("ALL".equalsIgnoreCase(selectedRegId)) {
+      pokemon = neo4jClient.getAllPokemon();
+    } else {
+      pokemon = neo4jClient.getPokemonForRegulation(selectedRegId);
+    }
+
+    model.addAttribute("regulations", regSummaries);
+    model.addAttribute("selectedRegulationId", selectedRegId);
+    model.addAttribute("activeRegulationId", activeRegId);
+    model.addAttribute("numOfPokemon", pokemon.size());
+    model.addAttribute("pokemonSummaries", pokemon);
     return "pokemon-overview";
   }
 

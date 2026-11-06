@@ -40,7 +40,7 @@
                     <th:block th:replace="~{fragments/typeIcon :: ${type}}" />
                 </span>
             </td>
-            <td th:text="${summary.baseStats.total}" />
+            <td th:text="${summary.baseStats.total > 0 ? summary.baseStats.total : '-'}" th:classappend="${summary.baseStats.total <= 0} ? 'text-secondary text-center' : ''" />
             <td th:replace="~{fragments/stat :: stat(${summary.baseStats.hp})}" />
             <td th:replace="~{fragments/stat :: stat(${summary.baseStats.atk})}" />
             <td th:replace="~{fragments/stat :: stat(${summary.baseStats.def})}" />

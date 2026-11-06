@@ -16,6 +16,15 @@ public class RegulationRules {
   private String representativeSpriteUrl;
   private String representativeSpriteBgSize;
   private String representativeSpritePosition;
+  private boolean active;
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
+  }
 
 
 
